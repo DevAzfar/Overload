@@ -1,2 +1,4 @@
 # Lift_Off
-Gym App to improve workouts
+A strength-training analytics application that tracks workouts, visualises progression and generates evidence-based training insights.
+
+
