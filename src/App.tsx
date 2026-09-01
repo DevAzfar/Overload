@@ -1,8 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  createWorkoutId,
+  loadPreviousSets,
+  loadWorkoutHistory,
+  savePreviousSets,
+  saveWorkoutHistory,
+  type PreviousSet,
+  type PreviousSetsByExercise,
+  type SavedWorkout,
+  type SavedWorkoutExercise,
+  type SavedWorkoutSet,
+} from "./workoutHistory";
 
-type Screen = "welcome" | "home" | "workout";
+type Screen = "welcome" | "home" | "workout" | "history";
 type SetEntry = { weight: string; reps: string; rpe: string; complete: boolean };
-type PreviousSet = { weight: number; reps: number };
 type Exercise = {
   id: string;
   name: string;
@@ -11,6 +22,8 @@ type Exercise = {
   previous: PreviousSet[];
 };
 type LoggedExercise = Exercise & { sessionId: string; sets: SetEntry[] };
+
+const WORKOUT_NAME = "Upper body";
 
 const EXERCISES: Exercise[] = [
   { id: "bench", name: "Barbell Bench Press", muscle: "Chest", equipment: "Barbell", previous: [{ weight: 70, reps: 8 }, { weight: 70, reps: 7 }] },
@@ -37,6 +50,60 @@ function formatTime(totalSeconds: number) {
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
+function parseOptionalNumber(value: string): number | null {
+  if (value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function hasValidOptionalRpe(value: string) {
+  return value.trim() === "" || parseOptionalNumber(value) !== null;
+}
+
+function isValidCompletedSet(set: SetEntry) {
+  const weight = parseOptionalNumber(set.weight);
+  const reps = parseOptionalNumber(set.reps);
+
+  return (
+    set.complete &&
+    weight !== null &&
+    weight >= 0 &&
+    reps !== null &&
+    reps > 0 &&
+    Number.isFinite(weight * reps) &&
+    hasValidOptionalRpe(set.rpe)
+  );
+}
+
+function toSavedSet(set: SetEntry): SavedWorkoutSet {
+  return {
+    weight: parseOptionalNumber(set.weight),
+    reps: parseOptionalNumber(set.reps),
+    rpe: parseOptionalNumber(set.rpe),
+    complete: set.complete,
+  };
+}
+
+function completedSetVolume(set: SetEntry) {
+  if (!isValidCompletedSet(set)) return 0;
+  return Number(set.weight) * Number(set.reps);
+}
+
+function formatHistoryDate(dateString: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateString));
+}
+
+function formatSavedNumber(value: number | null) {
+  return value === null ? "—" : value.toLocaleString();
+}
+
 function RocketMark() {
   return (
     <span className="rocket-mark" aria-hidden="true">
@@ -52,24 +119,28 @@ export default function Home() {
   const [showPicker, setShowPicker] = useState(false);
   const [search, setSearch] = useState("");
   const [loggedExercises, setLoggedExercises] = useState<LoggedExercise[]>([]);
-  const [savedPrevious, setSavedPrevious] = useState<Record<string, PreviousSet[]>>({});
+  const [savedPrevious, setSavedPrevious] = useState<PreviousSetsByExercise>({});
+  const [workoutStartedAt, setWorkoutStartedAt] = useState<number | null>(null);
+  const [workoutHistory, setWorkoutHistory] = useState<SavedWorkout[]>([]);
+  const [expandedWorkoutIds, setExpandedWorkoutIds] = useState<string[]>([]);
+  const [workoutError, setWorkoutError] = useState("");
   const [completedMessage, setCompletedMessage] = useState("");
 
   useEffect(() => {
-    if (screen !== "workout") return;
-    const interval = window.setInterval(() => setSeconds((value) => value + 1), 1000);
+    if (screen !== "workout" || workoutStartedAt === null) return;
+
+    const updateElapsedTime = () => {
+      setSeconds(Math.max(0, Math.floor((Date.now() - workoutStartedAt) / 1000)));
+    };
+
+    updateElapsedTime();
+    const interval = window.setInterval(updateElapsedTime, 1000);
     return () => window.clearInterval(interval);
-  }, [screen]);
+  }, [screen, workoutStartedAt]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("lift-off-previous-sets");
-    if (saved) {
-      try {
-        setSavedPrevious(JSON.parse(saved) as Record<string, PreviousSet[]>);
-      } catch {
-        window.localStorage.removeItem("lift-off-previous-sets");
-      }
-    }
+    setSavedPrevious(loadPreviousSets());
+    setWorkoutHistory(loadWorkoutHistory());
   }, []);
 
   const today = useMemo(
@@ -86,13 +157,15 @@ export default function Home() {
 
   const totalVolume = loggedExercises.reduce(
     (total, exercise) =>
-      total + exercise.sets.reduce((setTotal, set) => setTotal + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0),
+      total + exercise.sets.reduce((setTotal, set) => setTotal + completedSetVolume(set), 0),
     0,
   );
 
   function startWorkout() {
+    setWorkoutStartedAt(Date.now());
     setSeconds(0);
     setLoggedExercises([]);
+    setWorkoutError("");
     setCompletedMessage("");
     setScreen("workout");
   }
@@ -108,6 +181,7 @@ export default function Home() {
   }
 
   function updateSet(sessionId: string, setIndex: number, field: keyof SetEntry, value: string | boolean) {
+    setWorkoutError("");
     setLoggedExercises((current) =>
       current.map((exercise) =>
         exercise.sessionId !== sessionId
@@ -120,18 +194,104 @@ export default function Home() {
     );
   }
 
-  function finishWorkout() {
-    const newPrevious = { ...savedPrevious };
-    loggedExercises.forEach((exercise) => {
-      const completed = exercise.sets
-        .filter((set) => Number(set.weight) >= 0 && Number(set.reps) > 0)
-        .map((set) => ({ weight: Number(set.weight), reps: Number(set.reps) }));
-      if (completed.length) newPrevious[exercise.id] = completed;
-    });
-    setSavedPrevious(newPrevious);
-    window.localStorage.setItem("lift-off-previous-sets", JSON.stringify(newPrevious));
-    setCompletedMessage(`Workout saved · ${loggedExercises.length} exercises · ${Math.round(totalVolume).toLocaleString()} kg`);
+  function hasMeaningfulWorkoutData() {
+    return (
+      loggedExercises.length > 0 ||
+      loggedExercises.some((exercise) =>
+        exercise.sets.some((set) => set.weight.trim() || set.reps.trim() || set.rpe.trim() || set.complete),
+      )
+    );
+  }
+
+  function cancelWorkout() {
+    if (hasMeaningfulWorkoutData()) {
+      const shouldDiscard = window.confirm("Discard this workout? Your entered exercises and sets will not be saved.");
+      if (!shouldDiscard) return;
+    }
+
+    setLoggedExercises([]);
+    setWorkoutStartedAt(null);
+    setSeconds(0);
+    setShowPicker(false);
+    setSearch("");
+    setWorkoutError("");
     setScreen("home");
+  }
+
+  function finishWorkout() {
+    const completedSets = loggedExercises.flatMap((exercise) => exercise.sets.filter(isValidCompletedSet));
+
+    if (completedSets.length === 0) {
+      setWorkoutError("Complete at least one set with a valid weight and more than zero repetitions before finishing.");
+      return;
+    }
+
+    const hasInvalidCompletedSet = loggedExercises.some((exercise) =>
+      exercise.sets.some((set) => set.complete && !isValidCompletedSet(set)),
+    );
+
+    if (hasInvalidCompletedSet) {
+      setWorkoutError("One or more completed sets has invalid input. Use a non-negative weight, repetitions above zero and an optional numeric RPE.");
+      return;
+    }
+
+    if (workoutStartedAt === null) {
+      setWorkoutError("The workout start time is missing. Cancel this workout and start a new one.");
+      return;
+    }
+
+    const finishedAt = Date.now();
+    const savedExercises: SavedWorkoutExercise[] = loggedExercises.map((exercise) => ({
+      exerciseId: exercise.id,
+      name: exercise.name,
+      muscle: exercise.muscle,
+      equipment: exercise.equipment,
+      sets: exercise.sets.map(toSavedSet),
+    }));
+    const savedWorkout: SavedWorkout = {
+      id: createWorkoutId(),
+      name: WORKOUT_NAME,
+      startedAt: new Date(workoutStartedAt).toISOString(),
+      finishedAt: new Date(finishedAt).toISOString(),
+      durationSeconds: Math.max(0, Math.floor((finishedAt - workoutStartedAt) / 1000)),
+      exercises: savedExercises,
+      totalVolume,
+      exerciseCount: savedExercises.length,
+      completedSetCount: completedSets.length,
+    };
+    const nextHistory = [savedWorkout, ...workoutHistory].sort(
+      (first, second) => Date.parse(second.startedAt) - Date.parse(first.startedAt),
+    );
+
+    if (!saveWorkoutHistory(nextHistory)) {
+      setWorkoutError("Lift Off could not save this workout on your device. Your workout is still open, so please try again.");
+      return;
+    }
+
+    const newPrevious: PreviousSetsByExercise = { ...savedPrevious };
+    loggedExercises.forEach((exercise) => {
+      const completed: PreviousSet[] = exercise.sets.filter(isValidCompletedSet).map((set) => ({
+        weight: Number(set.weight),
+        reps: Number(set.reps),
+      }));
+      if (completed.length > 0) newPrevious[exercise.id] = completed;
+    });
+
+    setWorkoutHistory(nextHistory);
+    setSavedPrevious(newPrevious);
+    savePreviousSets(newPrevious);
+    setCompletedMessage(`Workout saved · ${savedExercises.length} exercises · ${Math.round(totalVolume).toLocaleString()} kg`);
+    setLoggedExercises([]);
+    setWorkoutStartedAt(null);
+    setSeconds(0);
+    setWorkoutError("");
+    setScreen("home");
+  }
+
+  function toggleWorkoutExpanded(workoutId: string) {
+    setExpandedWorkoutIds((current) =>
+      current.includes(workoutId) ? current.filter((id) => id !== workoutId) : [...current, workoutId],
+    );
   }
 
   if (screen === "welcome") {
@@ -155,12 +315,116 @@ export default function Home() {
     );
   }
 
+  if (screen === "history") {
+    return (
+      <main className="app-shell">
+        <div className="phone-layout history-layout">
+          <header className="history-header">
+            <button className="text-button history-back-button" onClick={() => setScreen("home")}>
+              <span aria-hidden="true">←</span> Home
+            </button>
+            <div className="brand-lockup compact"><RocketMark /><span>LIFT OFF</span></div>
+          </header>
+
+          <section className="history-intro" aria-labelledby="history-title">
+            <p className="eyebrow">Training log</p>
+            <h1 id="history-title">Workout history</h1>
+            <p>Every completed session saved on this device, newest first.</p>
+          </section>
+
+          {workoutHistory.length === 0 ? (
+            <section className="history-empty">
+              <div className="empty-icon" aria-hidden="true">◷</div>
+              <h2>No workouts saved yet</h2>
+              <p>Finish at least one valid completed set and your workout will appear here.</p>
+              <button className="primary-button" onClick={() => setScreen("home")}>Return home</button>
+            </section>
+          ) : (
+            <ol className="history-list" aria-label="Saved workouts">
+              {workoutHistory.map((workout) => {
+                const expanded = expandedWorkoutIds.includes(workout.id);
+                const detailsId = `workout-details-${workout.id}`;
+
+                return (
+                  <li key={workout.id}>
+                    <article className="history-card">
+                      <button
+                        className="history-summary"
+                        aria-expanded={expanded}
+                        aria-controls={detailsId}
+                        onClick={() => toggleWorkoutExpanded(workout.id)}
+                      >
+                        <span className="history-summary-heading">
+                          <span>
+                            <strong>{workout.name}</strong>
+                            <small>{formatHistoryDate(workout.startedAt)}</small>
+                          </span>
+                          <span className={expanded ? "history-chevron expanded" : "history-chevron"} aria-hidden="true">⌄</span>
+                        </span>
+                        <span className="history-metrics">
+                          <span><strong>{formatTime(workout.durationSeconds)}</strong><small>Duration</small></span>
+                          <span><strong>{workout.exerciseCount}</strong><small>Exercises</small></span>
+                          <span><strong>{workout.completedSetCount}</strong><small>Completed sets</small></span>
+                          <span><strong>{Math.round(workout.totalVolume).toLocaleString()} kg</strong><small>Volume</small></span>
+                        </span>
+                      </button>
+
+                      {expanded && (
+                        <div className="history-details" id={detailsId}>
+                          {workout.exercises.map((exercise, exerciseIndex) => (
+                            <section className="history-exercise" key={`${exercise.exerciseId}-${exerciseIndex}`}>
+                              <header>
+                                <span className="muscle-label">{exercise.muscle}</span>
+                                <h2>{exercise.name}</h2>
+                                <p>{exercise.equipment}</p>
+                              </header>
+                              <div className="history-set-table-wrap">
+                                <table className="history-set-table">
+                                  <caption className="sr-only">Sets for {exercise.name}</caption>
+                                  <thead>
+                                    <tr><th>Set</th><th>kg</th><th>Reps</th><th>RPE</th><th>Status</th></tr>
+                                  </thead>
+                                  <tbody>
+                                    {exercise.sets.map((set, setIndex) => (
+                                      <tr className={set.complete ? "history-set-complete" : "history-set-incomplete"} key={setIndex}>
+                                        <td>{setIndex + 1}</td>
+                                        <td>{formatSavedNumber(set.weight)}</td>
+                                        <td>{formatSavedNumber(set.reps)}</td>
+                                        <td>{formatSavedNumber(set.rpe)}</td>
+                                        <td><span className="set-status">{set.complete ? "Completed" : "Incomplete"}</span></td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </section>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          <nav className="bottom-nav" aria-label="Main navigation">
+            <button onClick={() => setScreen("home")}><span>⌂</span>Home</button>
+            <button className="nav-active" aria-current="page"><span>◷</span>History</button>
+            <button><span>⌁</span>Progress</button>
+            <button><span>⚙</span>Settings</button>
+          </nav>
+        </div>
+      </main>
+    );
+  }
+
   if (screen === "workout") {
     return (
       <main className="app-shell">
         <div className="phone-layout workout-layout">
           <header className="workout-header">
-            <button className="text-button" onClick={() => setScreen("home")}>Cancel</button>
+            <button className="text-button" onClick={cancelWorkout}>Cancel</button>
             <div className="live-pill"><span /> Live workout</div>
             <button className="finish-button" onClick={finishWorkout}>Finish</button>
           </header>
@@ -168,11 +432,13 @@ export default function Home() {
           <section className="workout-title-block">
             <p className="eyebrow">{today}</p>
             <div className="workout-heading-row">
-              <h1>Upper body</h1>
+              <h1>{WORKOUT_NAME}</h1>
               {totalVolume > 0 && <span className="volume-pill">{Math.round(totalVolume).toLocaleString()} kg</span>}
             </div>
             <div className="timer" aria-label={`Workout duration ${formatTime(seconds)}`}>{formatTime(seconds)}</div>
           </section>
+
+          {workoutError && <div className="workout-alert" role="alert">{workoutError}</div>}
 
           {loggedExercises.length === 0 ? (
             <section className="empty-workout-card">
@@ -334,8 +600,8 @@ export default function Home() {
         </section>
 
         <nav className="bottom-nav" aria-label="Main navigation">
-          <button className="nav-active"><span>⌂</span>Home</button>
-          <button><span>◷</span>History</button>
+          <button className="nav-active" aria-current="page"><span>⌂</span>Home</button>
+          <button onClick={() => setScreen("history")}><span>◷</span>History</button>
           <button><span>⌁</span>Progress</button>
           <button><span>⚙</span>Settings</button>
         </nav>
