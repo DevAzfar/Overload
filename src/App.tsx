@@ -22,6 +22,14 @@ type Exercise = {
   previous: PreviousSet[];
 };
 type LoggedExercise = Exercise & { sessionId: string; sets: SetEntry[] };
+type LocalWeekRange = { start: Date; endExclusive: Date; endDisplay: Date };
+type DashboardSummary = {
+  weekRange: LocalWeekRange;
+  workoutsThisWeek: number;
+  completedVolumeThisWeek: number;
+  completedSetsThisWeek: number;
+  latestWorkout: SavedWorkout | null;
+};
 
 const WORKOUT_NAME = "Upper body";
 
@@ -104,6 +112,104 @@ function formatSavedNumber(value: number | null) {
   return value === null ? "—" : value.toLocaleString();
 }
 
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalWeekRange(referenceDate: Date): LocalWeekRange {
+  const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  const daysSinceMonday = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - daysSinceMonday);
+
+  const endExclusive = new Date(start);
+  endExclusive.setDate(endExclusive.getDate() + 7);
+
+  const endDisplay = new Date(start);
+  endDisplay.setDate(endDisplay.getDate() + 6);
+
+  return { start, endExclusive, endDisplay };
+}
+
+function formatWeekRange({ start, endDisplay }: LocalWeekRange) {
+  const startDay = start.getDate();
+  const endDay = endDisplay.getDate();
+  const startMonth = new Intl.DateTimeFormat("en-GB", { month: "short" }).format(start);
+  const endMonth = new Intl.DateTimeFormat("en-GB", { month: "short" }).format(endDisplay);
+
+  if (start.getFullYear() !== endDisplay.getFullYear()) {
+    return `${startDay} ${startMonth} ${start.getFullYear()}–${endDay} ${endMonth} ${endDisplay.getFullYear()}`;
+  }
+
+  if (start.getMonth() !== endDisplay.getMonth()) {
+    return `${startDay} ${startMonth}–${endDay} ${endMonth}`;
+  }
+
+  return `${startDay}–${endDay} ${endMonth}`;
+}
+
+function formatCompactVolume(volume: number) {
+  const formatScaled = (value: number) =>
+    new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(value);
+
+  if (volume >= 1_000_000) return `${formatScaled(volume / 1_000_000)}M kg`;
+  if (volume >= 1_000) return `${formatScaled(volume / 1_000)}k kg`;
+  return `${formatScaled(volume)} kg`;
+}
+
+function formatFullVolume(volume: number) {
+  return `${new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 }).format(volume)} kg`;
+}
+
+function formatCompactDuration(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${safeSeconds}s`;
+}
+
+function formatRelativeWorkoutDate(dateString: string, referenceDate: Date) {
+  const workoutDate = new Date(dateString);
+  if (getLocalDateKey(workoutDate) === getLocalDateKey(referenceDate)) return "Today";
+
+  const yesterday = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (getLocalDateKey(workoutDate) === getLocalDateKey(yesterday)) return "Yesterday";
+
+  const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+  if (workoutDate.getFullYear() !== referenceDate.getFullYear()) options.year = "numeric";
+  return new Intl.DateTimeFormat("en-GB", options).format(workoutDate);
+}
+
+function pluralise(count: number, singular: string, plural = `${singular}s`) {
+  return count === 1 ? singular : plural;
+}
+
+function calculateDashboardSummary(history: SavedWorkout[], referenceDate: Date): DashboardSummary {
+  const weekRange = getLocalWeekRange(referenceDate);
+  const weeklyWorkouts = history.filter((workout) => {
+    const startedAt = new Date(workout.startedAt).getTime();
+    return startedAt >= weekRange.start.getTime() && startedAt < weekRange.endExclusive.getTime();
+  });
+  const latestWorkout = history.reduce<SavedWorkout | null>((latest, workout) => {
+    if (latest === null || Date.parse(workout.startedAt) > Date.parse(latest.startedAt)) return workout;
+    return latest;
+  }, null);
+
+  return {
+    weekRange,
+    workoutsThisWeek: weeklyWorkouts.length,
+    completedVolumeThisWeek: weeklyWorkouts.reduce((total, workout) => total + workout.totalVolume, 0),
+    completedSetsThisWeek: weeklyWorkouts.reduce((total, workout) => total + workout.completedSetCount, 0),
+    latestWorkout,
+  };
+}
+
 function RocketMark() {
   return (
     <span className="rocket-mark" aria-hidden="true">
@@ -143,9 +249,20 @@ export default function Home() {
     setWorkoutHistory(loadWorkoutHistory());
   }, []);
 
+  const currentLocalDateKey = getLocalDateKey(new Date());
   const today = useMemo(
     () => new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(new Date()),
-    [],
+    [currentLocalDateKey],
+  );
+  const dashboardSummary = useMemo(
+    () => calculateDashboardSummary(workoutHistory, new Date()),
+    [workoutHistory, currentLocalDateKey],
+  );
+  const latestWorkoutDateLabel = useMemo(
+    () => dashboardSummary.latestWorkout
+      ? formatRelativeWorkoutDate(dashboardSummary.latestWorkout.startedAt, new Date())
+      : "",
+    [dashboardSummary.latestWorkout, currentLocalDateKey],
   );
 
   const filteredExercises = useMemo(() => {
@@ -581,22 +698,46 @@ export default function Home() {
         <section className="section-block">
           <div className="section-heading">
             <div><p className="eyebrow">At a glance</p><h2>Your week</h2></div>
-            <span className="week-chip">Aug 17–23</span>
+            <span className="week-chip">{formatWeekRange(dashboardSummary.weekRange)}</span>
           </div>
           <div className="stat-grid">
-            <article className="stat-card"><span className="stat-symbol">✓</span><strong>3</strong><p>Workouts</p></article>
-            <article className="stat-card"><span className="stat-symbol">↗</span><strong>12.8k</strong><p>Volume · kg</p></article>
-            <article className="stat-card highlight-stat"><span className="stat-symbol">★</span><strong>2</strong><p>New records</p></article>
+            <article className="stat-card">
+              <span className="stat-symbol">◷</span>
+              <strong>{dashboardSummary.workoutsThisWeek}</strong>
+              <p>Workouts</p>
+            </article>
+            <article className="stat-card">
+              <span className="stat-symbol">Σ</span>
+              <strong>{formatCompactVolume(dashboardSummary.completedVolumeThisWeek)}</strong>
+              <p>Volume</p>
+            </article>
+            <article className="stat-card highlight-stat">
+              <span className="stat-symbol">✓</span>
+              <strong>{dashboardSummary.completedSetsThisWeek}</strong>
+              <p>Completed sets</p>
+            </article>
           </div>
         </section>
 
         <section className="insight-card">
-          <div className="insight-topline"><span className="insight-badge">Lift Off insight</span><span aria-hidden="true">•••</span></div>
-          <h2>Your weighted pull-up is climbing.</h2>
-          <p>Estimated strength is up 4.2% across your last four sessions. Keep the same exercise order next time for a cleaner comparison.</p>
-          <div className="mini-chart" aria-label="Upward strength trend illustration">
-            {[28, 42, 38, 61, 74, 88].map((height) => <span key={height} style={{ height: `${height}%` }} />)}
-          </div>
+          <div className="insight-topline"><span className="insight-badge">Latest session</span></div>
+          {dashboardSummary.latestWorkout ? (
+            <>
+              <h2>{dashboardSummary.latestWorkout.name} · {latestWorkoutDateLabel}</h2>
+              <p className="latest-session-line">
+                {dashboardSummary.latestWorkout.exerciseCount} {pluralise(dashboardSummary.latestWorkout.exerciseCount, "exercise")} ·{" "}
+                {dashboardSummary.latestWorkout.completedSetCount} completed {pluralise(dashboardSummary.latestWorkout.completedSetCount, "set")}
+              </p>
+              <p className="latest-session-total">
+                {formatFullVolume(dashboardSummary.latestWorkout.totalVolume)} across {formatCompactDuration(dashboardSummary.latestWorkout.durationSeconds)}
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>Your first session starts here.</h2>
+              <p>Complete a workout to see a factual summary of your latest training session.</p>
+            </>
+          )}
         </section>
 
         <nav className="bottom-nav" aria-label="Main navigation">
