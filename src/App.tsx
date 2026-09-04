@@ -1,6 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { EXERCISES, getExerciseById, type Exercise } from "./exercises";
+import ExerciseManager from "./ExerciseManager";
+import ExercisePicker from "./ExercisePicker";
+import {
+  combineExerciseLibrary,
+  createExerciseLookup,
+  getExerciseById,
+  getFallbackPreviousSets,
+  type CustomExercise,
+  type Equipment,
+  type Exercise,
+  type MuscleGroup,
+} from "./exercises";
 import ProgressScreen from "./ProgressScreen";
+import {
+  loadCustomExercises,
+  saveCustomExercises,
+} from "./customExercises";
 import {
   createWorkoutId,
   loadPreviousSets,
@@ -21,9 +36,9 @@ import {
   type WorkoutTemplate,
 } from "./workoutTemplates";
 
-type Screen = "welcome" | "home" | "templates" | "template-editor" | "workout" | "history" | "progress";
+type Screen = "welcome" | "home" | "templates" | "template-editor" | "exercise-manager" | "workout" | "history" | "progress";
 type SetEntry = { weight: string; reps: string; rpe: string; complete: boolean };
-type LoggedExercise = Exercise & { sessionId: string; sets: SetEntry[] };
+type LoggedExercise = Exercise & { previous: PreviousSet[]; sessionId: string; sets: SetEntry[] };
 type LocalWeekRange = { start: Date; endExclusive: Date; endDisplay: Date };
 type DashboardSummary = {
   weekRange: LocalWeekRange;
@@ -211,73 +226,19 @@ function createExerciseSessionId(exerciseId: string) {
   return `${exerciseId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-type ExercisePickerProps = {
-  title: string;
-  search: string;
-  selectedExerciseIds?: string[];
-  onSearchChange: (value: string) => void;
-  onSelect: (exercise: Exercise) => void;
-  onClose: () => void;
-};
-
-function ExercisePicker({
-  title,
-  search,
-  selectedExerciseIds = [],
-  onSearchChange,
-  onSelect,
-  onClose,
-}: ExercisePickerProps) {
-  const filteredExercises = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return EXERCISES.filter((exercise) =>
-      !term || [exercise.name, exercise.muscle, exercise.equipment].some((value) => value.toLowerCase().includes(term)),
-    );
-  }, [search]);
-
-  return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="exercise-picker" role="dialog" aria-modal="true" aria-labelledby="picker-title" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="modal-handle" />
-        <header className="picker-header">
-          <div><p className="eyebrow">Exercise library</p><h2 id="picker-title">{title}</h2></div>
-          <button className="modal-close" onClick={onClose} aria-label="Close exercise picker">×</button>
-        </header>
-        <label className="search-box">
-          <span aria-hidden="true">⌕</span>
-          <input autoFocus value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Search exercise, muscle or equipment" />
-        </label>
-        <div className="exercise-list">
-          {filteredExercises.map((exercise) => {
-            const alreadySelected = selectedExerciseIds.includes(exercise.id);
-            return (
-              <button
-                key={exercise.id}
-                className="exercise-option"
-                disabled={alreadySelected}
-                aria-label={alreadySelected ? `${exercise.name} already added` : `Add ${exercise.name}`}
-                onClick={() => onSelect(exercise)}
-              >
-                <span className="exercise-option-icon">{exercise.name.slice(0, 1)}</span>
-                <span><strong>{exercise.name}</strong><small>{exercise.muscle} · {exercise.equipment}</small></span>
-                <span className="option-plus">{alreadySelected ? "Added" : "＋"}</span>
-              </button>
-            );
-          })}
-          {filteredExercises.length === 0 && <p className="no-results">No matching exercise yet.</p>}
-        </div>
-      </section>
-    </div>
-  );
-}
-
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [seconds, setSeconds] = useState(0);
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [workoutExerciseSearch, setWorkoutExerciseSearch] = useState("");
+  const [workoutMuscleFilter, setWorkoutMuscleFilter] = useState<MuscleGroup | "">("");
+  const [workoutEquipmentFilter, setWorkoutEquipmentFilter] = useState<Equipment | "">("");
   const [templateExerciseSearch, setTemplateExerciseSearch] = useState("");
+  const [templateMuscleFilter, setTemplateMuscleFilter] = useState<MuscleGroup | "">("");
+  const [templateEquipmentFilter, setTemplateEquipmentFilter] = useState<Equipment | "">("");
+  const [customExercises, setCustomExercises] = useState<CustomExercise[]>([]);
+  const [customExerciseStorageError, setCustomExerciseStorageError] = useState("");
   const [loggedExercises, setLoggedExercises] = useState<LoggedExercise[]>([]);
   const [workoutName, setWorkoutName] = useState("");
   const [savedPrevious, setSavedPrevious] = useState<PreviousSetsByExercise>({});
@@ -306,10 +267,16 @@ export default function Home() {
   }, [screen, workoutStartedAt]);
 
   useEffect(() => {
+    const customExerciseLoad = loadCustomExercises();
+    setCustomExercises(customExerciseLoad.exercises);
+    if (customExerciseLoad.error) setCustomExerciseStorageError(customExerciseLoad.error);
     setSavedPrevious(loadPreviousSets());
     setWorkoutHistory(loadWorkoutHistory());
     setWorkoutTemplates(loadWorkoutTemplates());
   }, []);
+
+  const exerciseLibrary = useMemo(() => combineExerciseLibrary(customExercises), [customExercises]);
+  const exerciseLookup = useMemo(() => createExerciseLookup(exerciseLibrary), [exerciseLibrary]);
 
   const currentLocalDateKey = getLocalDateKey(new Date());
   const today = useMemo(
@@ -334,7 +301,8 @@ export default function Home() {
   );
 
   function createLoggedExercise(exercise: Exercise): LoggedExercise {
-    const previous = savedPrevious[exercise.id] ?? exercise.previous;
+    const previous = (savedPrevious[exercise.id] ?? getFallbackPreviousSets(exercise.id))
+      .map((set) => ({ ...set }));
     return { ...exercise, previous, sessionId: createExerciseSessionId(exercise.id), sets: [blankSet()] };
   }
 
@@ -344,13 +312,44 @@ export default function Home() {
     setScreen("templates");
   }
 
+  function resetWorkoutExerciseFilters() {
+    setWorkoutExerciseSearch("");
+    setWorkoutMuscleFilter("");
+    setWorkoutEquipmentFilter("");
+  }
+
+  function resetTemplateExerciseFilters() {
+    setTemplateExerciseSearch("");
+    setTemplateMuscleFilter("");
+    setTemplateEquipmentFilter("");
+  }
+
+  function commitCustomExercises(nextExercises: CustomExercise[]): boolean {
+    if (!saveCustomExercises(nextExercises)) {
+      setCustomExerciseStorageError("Lift Off could not write custom exercises to device storage.");
+      return false;
+    }
+
+    setCustomExercises(nextExercises);
+    setCustomExerciseStorageError("");
+    return true;
+  }
+
   function beginWorkout(name: string, exerciseIds: string[]) {
     const trimmedName = name.trim();
-    const exercises = exerciseIds
-      .map(getExerciseById)
-      .filter((exercise): exercise is Exercise => exercise !== undefined)
-      .map(createLoggedExercise);
+    const unavailableExerciseIds = exerciseIds.filter((exerciseId) => !getExerciseById(exerciseLookup, exerciseId));
+    if (unavailableExerciseIds.length > 0) {
+      setTemplateSelectionError(
+        `This template contains ${unavailableExerciseIds.length} unavailable ${unavailableExerciseIds.length === 1 ? "exercise" : "exercises"}. Edit the template and remove every unavailable entry before starting.`,
+      );
+      return;
+    }
 
+    const exercises = exerciseIds.map((exerciseId) =>
+      createLoggedExercise(getExerciseById(exerciseLookup, exerciseId)!),
+    );
+
+    setTemplateSelectionError("");
     setWorkoutName(trimmedName);
     setWorkoutStartedAt(Date.now());
     setSeconds(0);
@@ -374,7 +373,7 @@ export default function Home() {
   function addExerciseToWorkout(exercise: Exercise) {
     setLoggedExercises((current) => [...current, createLoggedExercise(exercise)]);
     setShowWorkoutPicker(false);
-    setWorkoutExerciseSearch("");
+    resetWorkoutExerciseFilters();
   }
 
   function openCreateTemplate() {
@@ -386,7 +385,7 @@ export default function Home() {
     setEditingTemplateId(null);
     setTemplateDraft({ id: templateId, name: "", exerciseIds: [], kind: "custom" });
     setTemplateError("");
-    setTemplateExerciseSearch("");
+    resetTemplateExerciseFilters();
     setShowTemplatePicker(false);
     setScreen("template-editor");
   }
@@ -395,7 +394,7 @@ export default function Home() {
     setEditingTemplateId(template.id);
     setTemplateDraft({ ...template, exerciseIds: [...template.exerciseIds] });
     setTemplateError("");
-    setTemplateExerciseSearch("");
+    resetTemplateExerciseFilters();
     setShowTemplatePicker(false);
     setScreen("template-editor");
   }
@@ -415,7 +414,7 @@ export default function Home() {
     setTemplateDraft({ ...templateDraft, exerciseIds: [...templateDraft.exerciseIds, exercise.id] });
     setTemplateError("");
     setShowTemplatePicker(false);
-    setTemplateExerciseSearch("");
+    resetTemplateExerciseFilters();
   }
 
   function removeExerciseFromTemplate(exerciseId: string) {
@@ -452,6 +451,10 @@ export default function Home() {
     }
     if (new Set(templateDraft.exerciseIds).size !== templateDraft.exerciseIds.length) {
       setTemplateError("A template cannot contain the same exercise more than once.");
+      return;
+    }
+    if (templateDraft.exerciseIds.some((exerciseId) => !getExerciseById(exerciseLookup, exerciseId))) {
+      setTemplateError("Remove every unavailable exercise before saving this template.");
       return;
     }
 
@@ -542,7 +545,7 @@ export default function Home() {
     setWorkoutStartedAt(null);
     setSeconds(0);
     setShowWorkoutPicker(false);
-    setWorkoutExerciseSearch("");
+    resetWorkoutExerciseFilters();
     setWorkoutError("");
     setScreen("home");
   }
@@ -662,33 +665,51 @@ export default function Home() {
             <p>The timer starts only after you choose a template or name an empty workout.</p>
           </section>
 
+          {templateSelectionError && <p className="template-error template-selection-error" role="alert">{templateSelectionError}</p>}
+
           <section className="template-section" aria-labelledby="saved-templates-title">
-            <div className="template-section-heading">
+            <div className="template-section-heading template-management-heading">
               <div><p className="eyebrow">Reusable workouts</p><h2 id="saved-templates-title">Templates</h2></div>
-              <button className="compact-action-button" onClick={openCreateTemplate}>Create template</button>
+              <div className="template-heading-actions">
+                <button className="compact-action-button" onClick={() => setScreen("exercise-manager")}>Manage exercises</button>
+                <button className="compact-action-button" onClick={openCreateTemplate}>Create template</button>
+              </div>
             </div>
 
             <div className="template-grid">
-              {workoutTemplates.map((template) => (
-                <article className="template-card" key={template.id}>
-                  <header>
-                    <span className="template-kind">{template.kind === "built-in" ? "Built-in" : "Custom"}</span>
-                    <h3>{template.name}</h3>
-                    <p>{template.exerciseIds.length} {pluralise(template.exerciseIds.length, "exercise")}</p>
-                  </header>
-                  <ol className="template-preview-list">
-                    {template.exerciseIds.map((exerciseId) => (
-                      <li key={exerciseId}>{getExerciseById(exerciseId)?.name ?? exerciseId}</li>
-                    ))}
-                  </ol>
-                  <div className="template-card-actions">
-                    <button className="primary-button template-start-button" onClick={() => beginWorkout(template.name, template.exerciseIds)}>
-                      Start {template.name}
-                    </button>
-                    <button className="template-edit-button" onClick={() => openEditTemplate(template)}>Edit template</button>
-                  </div>
-                </article>
-              ))}
+              {workoutTemplates.map((template) => {
+                const unavailableCount = template.exerciseIds.filter((exerciseId) => !getExerciseById(exerciseLookup, exerciseId)).length;
+                return (
+                  <article className="template-card" key={template.id}>
+                    <header>
+                      <span className="template-kind">{template.kind === "built-in" ? "Built-in" : "Custom"}</span>
+                      <h3>{template.name}</h3>
+                      <p>{template.exerciseIds.length} {pluralise(template.exerciseIds.length, "exercise")}</p>
+                    </header>
+                    <ol className="template-preview-list">
+                      {template.exerciseIds.map((exerciseId) => {
+                        const exercise = getExerciseById(exerciseLookup, exerciseId);
+                        return (
+                          <li className={exercise ? undefined : "unavailable-exercise"} key={exerciseId}>
+                            {exercise?.name ?? "Unavailable exercise"}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                    {unavailableCount > 0 && (
+                      <p className="template-availability-warning" role="status">
+                        Remove {unavailableCount} unavailable {pluralise(unavailableCount, "exercise")} before starting.
+                      </p>
+                    )}
+                    <div className="template-card-actions">
+                      <button className="primary-button template-start-button" onClick={() => beginWorkout(template.name, template.exerciseIds)}>
+                        Start {template.name}
+                      </button>
+                      <button className="template-edit-button" onClick={() => openEditTemplate(template)}>Edit template</button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
@@ -709,11 +730,23 @@ export default function Home() {
                 placeholder="e.g. Full body"
               />
             </label>
-            {templateSelectionError && <p className="template-error" role="alert">{templateSelectionError}</p>}
             <button className="primary-button empty-workout-start" onClick={startEmptyWorkout}>Start empty workout</button>
           </section>
         </div>
       </main>
+    );
+  }
+
+  if (screen === "exercise-manager") {
+    return (
+      <ExerciseManager
+        exercises={exerciseLibrary}
+        customExercises={customExercises}
+        workoutTemplates={workoutTemplates}
+        storageError={customExerciseStorageError}
+        onCommit={commitCustomExercises}
+        onBack={() => setScreen("templates")}
+      />
     );
   }
 
@@ -762,17 +795,20 @@ export default function Home() {
               ) : (
                 <ol className="template-exercise-list">
                   {templateDraft.exerciseIds.map((exerciseId, index) => {
-                    const exercise = getExerciseById(exerciseId);
-                    if (!exercise) return null;
+                    const exercise = getExerciseById(exerciseLookup, exerciseId);
+                    const displayName = exercise?.name ?? "Unavailable exercise";
 
                     return (
-                      <li key={exerciseId}>
+                      <li className={exercise ? undefined : "unavailable-exercise"} key={exerciseId}>
                         <span className="template-order-number">{index + 1}</span>
-                        <span className="template-exercise-name"><strong>{exercise.name}</strong><small>{exercise.muscle} · {exercise.equipment}</small></span>
+                        <span className="template-exercise-name">
+                          <strong>{displayName}</strong>
+                          <small>{exercise ? `${exercise.muscle} · ${exercise.equipment}` : `Missing ID: ${exerciseId}`}</small>
+                        </span>
                         <span className="template-order-actions">
-                          <button type="button" disabled={index === 0} onClick={() => moveTemplateExercise(index, -1)} aria-label={`Move ${exercise.name} up`}>Move up</button>
-                          <button type="button" disabled={index === templateDraft.exerciseIds.length - 1} onClick={() => moveTemplateExercise(index, 1)} aria-label={`Move ${exercise.name} down`}>Move down</button>
-                          <button type="button" className="remove-template-exercise" onClick={() => removeExerciseFromTemplate(exercise.id)} aria-label={`Remove ${exercise.name}`}>Remove</button>
+                          <button type="button" disabled={index === 0} onClick={() => moveTemplateExercise(index, -1)} aria-label={`Move ${displayName} up`}>Move up</button>
+                          <button type="button" disabled={index === templateDraft.exerciseIds.length - 1} onClick={() => moveTemplateExercise(index, 1)} aria-label={`Move ${displayName} down`}>Move down</button>
+                          <button type="button" className="remove-template-exercise" onClick={() => removeExerciseFromTemplate(exerciseId)} aria-label={`Remove ${displayName}`}>Remove</button>
                         </span>
                       </li>
                     );
@@ -785,7 +821,7 @@ export default function Home() {
                 type="button"
                 onClick={() => {
                   setTemplateError("");
-                  setTemplateExerciseSearch("");
+                  resetTemplateExerciseFilters();
                   setShowTemplatePicker(true);
                 }}
               >＋ Add exercise</button>
@@ -819,13 +855,19 @@ export default function Home() {
         {showTemplatePicker && (
           <ExercisePicker
             title="Add to template"
+            exercises={exerciseLibrary}
             search={templateExerciseSearch}
+            muscleFilter={templateMuscleFilter}
+            equipmentFilter={templateEquipmentFilter}
             selectedExerciseIds={templateDraft.exerciseIds}
             onSearchChange={setTemplateExerciseSearch}
+            onMuscleFilterChange={setTemplateMuscleFilter}
+            onEquipmentFilterChange={setTemplateEquipmentFilter}
+            onResetFilters={resetTemplateExerciseFilters}
             onSelect={addExerciseToTemplateDraft}
             onClose={() => {
               setShowTemplatePicker(false);
-              setTemplateExerciseSearch("");
+              resetTemplateExerciseFilters();
             }}
           />
         )}
@@ -941,6 +983,7 @@ export default function Home() {
     return (
       <ProgressScreen
         workoutHistory={workoutHistory}
+        exerciseLibrary={exerciseLibrary}
         onNavigateHome={() => setScreen("home")}
         onNavigateHistory={() => setScreen("history")}
       />
@@ -974,7 +1017,7 @@ export default function Home() {
               <h2>Build this workout</h2>
               <p>Add your first exercise, then record weight, reps and effort as you train.</p>
               <button className="primary-button add-exercise-button" onClick={() => {
-                setWorkoutExerciseSearch("");
+                resetWorkoutExerciseFilters();
                 setShowWorkoutPicker(true);
               }}>
                 <span aria-hidden="true">＋</span> Add exercise
@@ -1047,7 +1090,7 @@ export default function Home() {
                 </article>
               ))}
               <button className="secondary-add-button" onClick={() => {
-                setWorkoutExerciseSearch("");
+                resetWorkoutExerciseFilters();
                 setShowWorkoutPicker(true);
               }}>＋ Add another exercise</button>
             </section>
@@ -1064,12 +1107,18 @@ export default function Home() {
         {showWorkoutPicker && (
           <ExercisePicker
             title="Add exercise"
+            exercises={exerciseLibrary}
             search={workoutExerciseSearch}
+            muscleFilter={workoutMuscleFilter}
+            equipmentFilter={workoutEquipmentFilter}
             onSearchChange={setWorkoutExerciseSearch}
+            onMuscleFilterChange={setWorkoutMuscleFilter}
+            onEquipmentFilterChange={setWorkoutEquipmentFilter}
+            onResetFilters={resetWorkoutExerciseFilters}
             onSelect={addExerciseToWorkout}
             onClose={() => {
               setShowWorkoutPicker(false);
-              setWorkoutExerciseSearch("");
+              resetWorkoutExerciseFilters();
             }}
           />
         )}

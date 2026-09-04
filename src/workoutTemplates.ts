@@ -1,5 +1,3 @@
-import { isKnownExerciseId } from "./exercises";
-
 export const WORKOUT_TEMPLATES_KEY = "lift-off-workout-templates-v1";
 
 export type WorkoutTemplateKind = "built-in" | "custom";
@@ -63,8 +61,10 @@ function toValidTemplate(value: unknown): WorkoutTemplate | null {
   if (typeof value.name !== "string" || value.name.trim() === "") return null;
   if (value.kind !== "built-in" && value.kind !== "custom") return null;
   if (!Array.isArray(value.exerciseIds) || value.exerciseIds.length === 0) return null;
-  if (!value.exerciseIds.every((exerciseId) => typeof exerciseId === "string" && isKnownExerciseId(exerciseId))) return null;
-  if (new Set(value.exerciseIds).size !== value.exerciseIds.length) return null;
+  if (!value.exerciseIds.every((exerciseId) => typeof exerciseId === "string" && exerciseId.trim() !== "")) return null;
+
+  const exerciseIds = value.exerciseIds.map((exerciseId) => exerciseId.trim());
+  if (new Set(exerciseIds).size !== exerciseIds.length) return null;
 
   const id = value.id.trim();
   if (value.kind === "built-in" && !BUILT_IN_IDS.has(id)) return null;
@@ -73,7 +73,7 @@ function toValidTemplate(value: unknown): WorkoutTemplate | null {
   return {
     id,
     name: value.name.trim(),
-    exerciseIds: [...value.exerciseIds],
+    exerciseIds,
     kind: value.kind,
   };
 }

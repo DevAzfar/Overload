@@ -1,4 +1,4 @@
-import { getExerciseById } from "./exercises";
+import { createExerciseLookup, getExerciseById, type Exercise } from "./exercises";
 import type { SavedWorkout, SavedWorkoutSet } from "./workoutHistory";
 
 export type ValidProgressSet = {
@@ -106,8 +106,12 @@ function toValidProgressSet(set: SavedWorkoutSet): ValidProgressSet | null {
   };
 }
 
-export function buildExerciseChoices(history: SavedWorkout[]): ExerciseProgressChoice[] {
+export function buildExerciseChoices(
+  history: SavedWorkout[],
+  exerciseLibrary: readonly Exercise[],
+): ExerciseProgressChoice[] {
   const choices = new Map<string, { historicalName: string; newestTimestamp: number; hasValidPerformance: boolean }>();
+  const exerciseLookup = createExerciseLookup(exerciseLibrary);
 
   history.forEach((workout) => {
     const workoutTimestamp = Date.parse(workout.startedAt);
@@ -135,7 +139,7 @@ export function buildExerciseChoices(history: SavedWorkout[]): ExerciseProgressC
   return [...choices.entries()]
     .map(([exerciseId, details]) => ({
       exerciseId,
-      displayName: getExerciseById(exerciseId)?.name ?? details.historicalName,
+      displayName: getExerciseById(exerciseLookup, exerciseId)?.name ?? details.historicalName,
       hasValidPerformance: details.hasValidPerformance,
     }))
     .sort((first, second) =>
@@ -258,8 +262,9 @@ export function detectPersonalRecords(sessionsNewestFirst: ExerciseSessionProgre
 export function calculateExerciseProgress(
   history: SavedWorkout[],
   exerciseId: string,
+  exerciseLibrary: readonly Exercise[],
 ): ExerciseProgressAnalytics | null {
-  const choice = buildExerciseChoices(history).find((candidate) => candidate.exerciseId === exerciseId);
+  const choice = buildExerciseChoices(history, exerciseLibrary).find((candidate) => candidate.exerciseId === exerciseId);
   if (!choice) return null;
 
   const sessionsNewestFirst = buildExerciseSessions(history, exerciseId);

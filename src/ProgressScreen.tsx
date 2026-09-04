@@ -6,10 +6,12 @@ import {
   type PersonalRecordAchievement,
   type VolumeTrendPoint,
 } from "./progressAnalytics";
+import type { Exercise } from "./exercises";
 import type { SavedWorkout } from "./workoutHistory";
 
 type ProgressScreenProps = {
   workoutHistory: SavedWorkout[];
+  exerciseLibrary: readonly Exercise[];
   onNavigateHome: () => void;
   onNavigateHistory: () => void;
 };
@@ -127,8 +129,11 @@ function VolumeTrendChart({ series }: { series: VolumeTrendPoint[] }) {
   );
 }
 
-export default function ProgressScreen({ workoutHistory, onNavigateHome, onNavigateHistory }: ProgressScreenProps) {
-  const choices = useMemo(() => buildExerciseChoices(workoutHistory), [workoutHistory]);
+export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavigateHome, onNavigateHistory }: ProgressScreenProps) {
+  const choices = useMemo(
+    () => buildExerciseChoices(workoutHistory, exerciseLibrary),
+    [exerciseLibrary, workoutHistory],
+  );
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
   const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
   const selectedStillExists = choices.some((choice) => choice.exerciseId === selectedExerciseId);
@@ -136,8 +141,8 @@ export default function ProgressScreen({ workoutHistory, onNavigateHome, onNavig
   const activeExerciseId = selectedStillExists ? selectedExerciseId : automaticSelection;
   const hasAnyValidPerformance = choices.some((choice) => choice.hasValidPerformance);
   const analytics = useMemo(
-    () => activeExerciseId ? calculateExerciseProgress(workoutHistory, activeExerciseId) : null,
-    [activeExerciseId, workoutHistory],
+    () => activeExerciseId ? calculateExerciseProgress(workoutHistory, activeExerciseId, exerciseLibrary) : null,
+    [activeExerciseId, exerciseLibrary, workoutHistory],
   );
 
   function toggleSession(sessionId: string) {
@@ -214,7 +219,7 @@ export default function ProgressScreen({ workoutHistory, onNavigateHome, onNavig
                     <MetricCard label="Recorded volume" value={formatWeight(analytics.allTimeBests.totalVolume)} detail="Valid completed sets" />
                     <MetricCard label="Sessions" value={formatNumber(analytics.allTimeBests.sessionCount)} detail="With valid completed sets" />
                   </div>
-                  <p className="estimate-explanation">Estimated 1RM uses the Epley formula for sets of 1–30 repetitions. It is an estimate, not an actual tested maximum.</p>
+                  <p className="estimate-explanation">Estimated 1RM uses the Epley formula for sets of 1–30 repetitions. It is an estimate, not an actual tested maximum. For bodyweight movements entered as 0 kg, zero volume and estimated 1RM reflect only the entered external weight, not the athlete&apos;s complete performance.</p>
                 </section>
 
                 <VolumeTrendChart series={analytics.volumeSeries} />
