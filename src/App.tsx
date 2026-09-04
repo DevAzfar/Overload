@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { EXERCISES, getExerciseById, type Exercise } from "./exercises";
+import ProgressScreen from "./ProgressScreen";
 import {
   createWorkoutId,
   loadPreviousSets,
@@ -20,7 +21,7 @@ import {
   type WorkoutTemplate,
 } from "./workoutTemplates";
 
-type Screen = "welcome" | "home" | "templates" | "template-editor" | "workout" | "history";
+type Screen = "welcome" | "home" | "templates" | "template-editor" | "workout" | "history" | "progress";
 type SetEntry = { weight: string; reps: string; rpe: string; complete: boolean };
 type LoggedExercise = Exercise & { sessionId: string; sets: SetEntry[] };
 type LocalWeekRange = { start: Date; endExclusive: Date; endDisplay: Date };
@@ -928,11 +929,21 @@ export default function Home() {
           <nav className="bottom-nav" aria-label="Main navigation">
             <button onClick={() => setScreen("home")}><span>⌂</span>Home</button>
             <button className="nav-active" aria-current="page"><span>◷</span>History</button>
-            <button><span>⌁</span>Progress</button>
+            <button onClick={() => setScreen("progress")}><span>⌁</span>Progress</button>
             <button><span>⚙</span>Settings</button>
           </nav>
         </div>
       </main>
+    );
+  }
+
+  if (screen === "progress") {
+    return (
+      <ProgressScreen
+        workoutHistory={workoutHistory}
+        onNavigateHome={() => setScreen("home")}
+        onNavigateHistory={() => setScreen("history")}
+      />
     );
   }
 
@@ -1136,7 +1147,7 @@ export default function Home() {
         <nav className="bottom-nav" aria-label="Main navigation">
           <button className="nav-active" aria-current="page"><span>⌂</span>Home</button>
           <button onClick={() => setScreen("history")}><span>◷</span>History</button>
-          <button><span>⌁</span>Progress</button>
+          <button onClick={() => setScreen("progress")}><span>⌁</span>Progress</button>
           <button><span>⚙</span>Settings</button>
         </nav>
       </div>
