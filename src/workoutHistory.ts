@@ -76,7 +76,7 @@ function isSavedWorkoutExercise(value: unknown): value is SavedWorkoutExercise {
   );
 }
 
-function isSavedWorkout(value: unknown): value is SavedWorkout {
+export function isSavedWorkout(value: unknown): value is SavedWorkout {
   return (
     isObject(value) &&
     typeof value.id === "string" &&
@@ -96,6 +96,38 @@ function isSavedWorkout(value: unknown): value is SavedWorkout {
     Number.isInteger(value.completedSetCount) &&
     value.completedSetCount > 0
   );
+}
+
+export function isValidCompletedSavedSet(set: SavedWorkoutSet): boolean {
+  return (
+    set.complete &&
+    set.weight !== null &&
+    Number.isFinite(set.weight) &&
+    set.weight >= 0 &&
+    set.reps !== null &&
+    Number.isFinite(set.reps) &&
+    set.reps > 0 &&
+    Number.isFinite(set.weight * set.reps) &&
+    (set.rpe === null || Number.isFinite(set.rpe))
+  );
+}
+
+export function calculateSavedWorkoutSummary(exercises: SavedWorkoutExercise[]): {
+  totalVolume: number;
+  exerciseCount: number;
+  completedSetCount: number;
+} {
+  const completedSets = exercises.flatMap((exercise) => exercise.sets.filter(isValidCompletedSavedSet));
+  const totalVolume = completedSets.reduce((total, set) => {
+    const nextTotal = total + set.weight! * set.reps!;
+    return Number.isFinite(nextTotal) ? nextTotal : Number.MAX_VALUE;
+  }, 0);
+
+  return {
+    totalVolume,
+    exerciseCount: exercises.length,
+    completedSetCount: completedSets.length,
+  };
 }
 
 function safelyRemoveItem(key: string) {

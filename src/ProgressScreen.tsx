@@ -8,12 +8,19 @@ import {
 } from "./progressAnalytics";
 import type { Exercise } from "./exercises";
 import type { SavedWorkout } from "./workoutHistory";
+import {
+  formatVolumeFromKilograms,
+  formatWeightFromKilograms,
+  type WeightUnit,
+} from "./weightUnits";
 
 type ProgressScreenProps = {
   workoutHistory: SavedWorkout[];
   exerciseLibrary: readonly Exercise[];
+  weightUnit: WeightUnit;
   onNavigateHome: () => void;
   onNavigateHistory: () => void;
+  onNavigateSettings: () => void;
 };
 
 function formatNumber(value: number, maximumFractionDigits = 2) {
@@ -22,12 +29,8 @@ function formatNumber(value: number, maximumFractionDigits = 2) {
   return new Intl.NumberFormat("en-GB", { maximumFractionDigits }).format(value);
 }
 
-function formatWeight(value: number) {
-  return `${formatNumber(value)} kg`;
-}
-
-function formatEstimatedOneRepMax(value: number | null) {
-  return value === null ? "Not available" : `${formatNumber(value, 1)} kg`;
+function formatEstimatedOneRepMax(value: number | null, weightUnit: WeightUnit) {
+  return value === null ? "Not available" : formatWeightFromKilograms(value, weightUnit, 1);
 }
 
 function formatProgressDate(dateString: string) {
@@ -49,10 +52,10 @@ function formatBestDetail(best: ExerciseMetricBest | null) {
   return best ? `${best.workoutName} · ${formatShortDate(best.startedAt)}` : "No eligible sets";
 }
 
-function recordLabel(achievement: PersonalRecordAchievement) {
-  if (achievement.category === "weight") return `Heaviest weight · ${formatWeight(achievement.value)}`;
+function recordLabel(achievement: PersonalRecordAchievement, weightUnit: WeightUnit) {
+  if (achievement.category === "weight") return `Heaviest weight · ${formatWeightFromKilograms(achievement.value, weightUnit)}`;
   if (achievement.category === "repetitions") return `Highest repetitions · ${formatNumber(achievement.value)}`;
-  return `Estimated 1RM · ${formatEstimatedOneRepMax(achievement.value)}`;
+  return `Estimated 1RM · ${formatEstimatedOneRepMax(achievement.value, weightUnit)}`;
 }
 
 type MetricCardProps = {
@@ -72,7 +75,7 @@ function MetricCard({ label, value, detail, highlighted = false }: MetricCardPro
   );
 }
 
-function VolumeTrendChart({ series }: { series: VolumeTrendPoint[] }) {
+function VolumeTrendChart({ series, weightUnit }: { series: VolumeTrendPoint[]; weightUnit: WeightUnit }) {
   const titleId = useId();
   const descriptionId = useId();
   const width = 100;
@@ -92,7 +95,7 @@ function VolumeTrendChart({ series }: { series: VolumeTrendPoint[] }) {
     };
   });
   const accessibleValues = series
-    .map((point) => `${formatShortDate(point.startedAt)}: ${formatWeight(point.volume)}`)
+    .map((point) => `${formatShortDate(point.startedAt)}: ${formatVolumeFromKilograms(point.volume, weightUnit)}`)
     .join("; ");
 
   return (
@@ -115,13 +118,13 @@ function VolumeTrendChart({ series }: { series: VolumeTrendPoint[] }) {
           )}
           {coordinates.map((point) => (
             <circle className="volume-chart-point" key={`${point.workoutId}-${point.startedAt}`} cx={point.x} cy={point.y} r="2.2">
-              <title>{formatShortDate(point.startedAt)} · {formatWeight(point.volume)}</title>
+              <title>{formatShortDate(point.startedAt)} · {formatVolumeFromKilograms(point.volume, weightUnit)}</title>
             </circle>
           ))}
         </svg>
         <div className="volume-chart-labels" aria-hidden="true">
-          <span>{formatShortDate(series[0].startedAt)}<strong>{formatWeight(series[0].volume)}</strong></span>
-          {series.length > 1 && <span>{formatShortDate(series[series.length - 1].startedAt)}<strong>{formatWeight(series[series.length - 1].volume)}</strong></span>}
+          <span>{formatShortDate(series[0].startedAt)}<strong>{formatVolumeFromKilograms(series[0].volume, weightUnit)}</strong></span>
+          {series.length > 1 && <span>{formatShortDate(series[series.length - 1].startedAt)}<strong>{formatVolumeFromKilograms(series[series.length - 1].volume, weightUnit)}</strong></span>}
         </div>
       </div>
       <p className="sr-only">{accessibleValues}</p>
@@ -129,7 +132,14 @@ function VolumeTrendChart({ series }: { series: VolumeTrendPoint[] }) {
   );
 }
 
-export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavigateHome, onNavigateHistory }: ProgressScreenProps) {
+export default function ProgressScreen({
+  exerciseLibrary,
+  workoutHistory,
+  weightUnit,
+  onNavigateHome,
+  onNavigateHistory,
+  onNavigateSettings,
+}: ProgressScreenProps) {
   const choices = useMemo(
     () => buildExerciseChoices(workoutHistory, exerciseLibrary),
     [exerciseLibrary, workoutHistory],
@@ -208,21 +218,21 @@ export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavi
                     <div><p className="eyebrow">Current maximums</p><h2 id="all-time-bests-title">All-time bests</h2></div>
                   </div>
                   <div className="progress-metric-grid">
-                    <MetricCard label="Best weight" value={formatWeight(analytics.allTimeBests.bestWeight!.value)} detail={formatBestDetail(analytics.allTimeBests.bestWeight)} />
+                    <MetricCard label="Best weight" value={formatWeightFromKilograms(analytics.allTimeBests.bestWeight!.value, weightUnit)} detail={formatBestDetail(analytics.allTimeBests.bestWeight)} />
                     <MetricCard label="Best repetitions" value={formatNumber(analytics.allTimeBests.bestRepetitions!.value)} detail={formatBestDetail(analytics.allTimeBests.bestRepetitions)} />
                     <MetricCard
                       label="Estimated 1RM"
-                      value={formatEstimatedOneRepMax(analytics.allTimeBests.bestEstimatedOneRepMax?.value ?? null)}
+                      value={formatEstimatedOneRepMax(analytics.allTimeBests.bestEstimatedOneRepMax?.value ?? null, weightUnit)}
                       detail={formatBestDetail(analytics.allTimeBests.bestEstimatedOneRepMax)}
                       highlighted
                     />
-                    <MetricCard label="Recorded volume" value={formatWeight(analytics.allTimeBests.totalVolume)} detail="Valid completed sets" />
+                    <MetricCard label="Recorded volume" value={formatVolumeFromKilograms(analytics.allTimeBests.totalVolume, weightUnit)} detail="Valid completed sets" />
                     <MetricCard label="Sessions" value={formatNumber(analytics.allTimeBests.sessionCount)} detail="With valid completed sets" />
                   </div>
-                  <p className="estimate-explanation">Estimated 1RM uses the Epley formula for sets of 1–30 repetitions. It is an estimate, not an actual tested maximum. For bodyweight movements entered as 0 kg, zero volume and estimated 1RM reflect only the entered external weight, not the athlete&apos;s complete performance.</p>
+                  <p className="estimate-explanation">Estimated 1RM uses the Epley formula for sets of 1–30 repetitions. It is an estimate, not an actual tested maximum. For bodyweight movements entered as 0 {weightUnit}, zero volume and estimated 1RM reflect only the entered external weight, not the athlete&apos;s complete performance.</p>
                 </section>
 
-                <VolumeTrendChart series={analytics.volumeSeries} />
+                <VolumeTrendChart series={analytics.volumeSeries} weightUnit={weightUnit} />
 
                 <section className="progress-panel" aria-labelledby="personal-records-title">
                   <div className="progress-section-heading">
@@ -240,7 +250,7 @@ export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavi
                             <h3>{event.workoutName}</h3>
                             <ul>
                               {event.achievements.map((achievement) => (
-                                <li key={achievement.category}>{recordLabel(achievement)}</li>
+                                <li key={achievement.category}>{recordLabel(achievement, weightUnit)}</li>
                               ))}
                             </ul>
                           </div>
@@ -264,8 +274,8 @@ export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavi
                             <span><strong>{session.workoutName}</strong><small>{formatProgressDate(session.startedAt)}</small></span>
                             <span className="progress-session-facts">
                               <span>{session.sets.length} {session.sets.length === 1 ? "set" : "sets"}</span>
-                              <span>{formatWeight(session.volume)}</span>
-                              <span>Est. 1RM {formatEstimatedOneRepMax(session.bestEstimatedOneRepMax)}</span>
+                              <span>{formatVolumeFromKilograms(session.volume, weightUnit)}</span>
+                              <span>Est. 1RM {formatEstimatedOneRepMax(session.bestEstimatedOneRepMax, weightUnit)}</span>
                             </span>
                             <span className={expanded ? "history-chevron expanded" : "history-chevron"} aria-hidden="true">⌄</span>
                           </button>
@@ -279,10 +289,10 @@ export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavi
                                     {session.sets.map((set, index) => (
                                       <tr key={index}>
                                         <td>{index + 1}</td>
-                                        <td>{formatWeight(set.weight)} × {formatNumber(set.reps)}</td>
+                                        <td>{formatWeightFromKilograms(set.weight, weightUnit)} × {formatNumber(set.reps)}</td>
                                         <td>{set.rpe === null ? "—" : formatNumber(set.rpe)}</td>
-                                        <td>{formatWeight(set.volume)}</td>
-                                        <td>{formatEstimatedOneRepMax(set.estimatedOneRepMax)}</td>
+                                        <td>{formatVolumeFromKilograms(set.volume, weightUnit)}</td>
+                                        <td>{formatEstimatedOneRepMax(set.estimatedOneRepMax, weightUnit)}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -304,7 +314,7 @@ export default function ProgressScreen({ exerciseLibrary, workoutHistory, onNavi
           <button onClick={onNavigateHome}><span>⌂</span>Home</button>
           <button onClick={onNavigateHistory}><span>◷</span>History</button>
           <button className="nav-active" aria-current="page"><span>⌁</span>Progress</button>
-          <button><span>⚙</span>Settings</button>
+          <button onClick={onNavigateSettings}><span>⚙</span>Settings</button>
         </nav>
       </div>
     </main>

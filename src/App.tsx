@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import ExerciseManager from "./ExerciseManager";
 import ExercisePicker from "./ExercisePicker";
+import SettingsScreen, { type SettingsActionResult } from "./SettingsScreen";
+import {
+  getDefaultAppSettings,
+  getResolvedDisplayName,
+  loadAppSettings,
+  normaliseAppSettings,
+  saveAppSettings,
+  type AppSettings,
+} from "./appSettings";
 import {
   combineExerciseLibrary,
   createExerciseLookup,
@@ -18,10 +27,10 @@ import {
 } from "./customExercises";
 import {
   createWorkoutId,
+  calculateSavedWorkoutSummary,
+  isValidCompletedSavedSet,
   loadPreviousSets,
   loadWorkoutHistory,
-  savePreviousSets,
-  saveWorkoutHistory,
   type PreviousSet,
   type PreviousSetsByExercise,
   type SavedWorkout,
@@ -31,12 +40,30 @@ import {
 import {
   createTemplateId,
   getDefaultTemplate,
+  getDefaultTemplates,
   loadWorkoutTemplates,
   saveWorkoutTemplates,
   type WorkoutTemplate,
 } from "./workoutTemplates";
+import {
+  ALL_LIFT_OFF_KEYS,
+  WORKOUT_DATA_KEYS,
+  rebuildPreviousSetsFromHistory,
+  removeStorageKeysWithRollback,
+  writeWorkoutDataWithRollback,
+} from "./workoutDataControls";
+import {
+  displayWeightToKilograms,
+  formatCompactVolumeFromKilograms,
+  formatDisplayNumber,
+  formatVolumeFromKilograms,
+  formatWeightFromKilograms,
+  formatWeightInputFromKilograms,
+  kilogramsToDisplayWeight,
+  type WeightUnit,
+} from "./weightUnits";
 
-type Screen = "welcome" | "home" | "templates" | "template-editor" | "exercise-manager" | "workout" | "history" | "progress";
+type Screen = "welcome" | "home" | "templates" | "template-editor" | "exercise-manager" | "workout" | "history" | "progress" | "settings";
 type SetEntry = { weight: string; reps: string; rpe: string; complete: boolean };
 type LoggedExercise = Exercise & { previous: PreviousSet[]; sessionId: string; sets: SetEntry[] };
 type LocalWeekRange = { start: Date; endExclusive: Date; endDisplay: Date };
@@ -82,9 +109,10 @@ function isValidCompletedSet(set: SetEntry) {
   );
 }
 
-function toSavedSet(set: SetEntry): SavedWorkoutSet {
+function toSavedSet(set: SetEntry, weightUnit: WeightUnit): SavedWorkoutSet {
+  const displayWeight = parseOptionalNumber(set.weight);
   return {
-    weight: parseOptionalNumber(set.weight),
+    weight: displayWeight === null ? null : displayWeightToKilograms(displayWeight, weightUnit),
     reps: parseOptionalNumber(set.reps),
     rpe: parseOptionalNumber(set.rpe),
     complete: set.complete,
@@ -149,19 +177,6 @@ function formatWeekRange({ start, endDisplay }: LocalWeekRange) {
   return `${startDay}–${endDay} ${endMonth}`;
 }
 
-function formatCompactVolume(volume: number) {
-  const formatScaled = (value: number) =>
-    new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(value);
-
-  if (volume >= 1_000_000) return `${formatScaled(volume / 1_000_000)}M kg`;
-  if (volume >= 1_000) return `${formatScaled(volume / 1_000)}k kg`;
-  return `${formatScaled(volume)} kg`;
-}
-
-function formatFullVolume(volume: number) {
-  return `${new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 }).format(volume)} kg`;
-}
-
 function formatCompactDuration(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);
@@ -187,6 +202,15 @@ function formatRelativeWorkoutDate(dateString: string, referenceDate: Date) {
 
 function pluralise(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
+}
+
+function getDisplayInitials(displayName: string) {
+  return displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toLocaleUpperCase("en-GB"))
+    .join("") || "A";
 }
 
 function calculateDashboardSummary(history: SavedWorkout[], referenceDate: Date): DashboardSummary {
@@ -239,6 +263,8 @@ export default function Home() {
   const [templateEquipmentFilter, setTemplateEquipmentFilter] = useState<Equipment | "">("");
   const [customExercises, setCustomExercises] = useState<CustomExercise[]>([]);
   const [customExerciseStorageError, setCustomExerciseStorageError] = useState("");
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => getDefaultAppSettings());
+  const [settingsLoadError, setSettingsLoadError] = useState("");
   const [loggedExercises, setLoggedExercises] = useState<LoggedExercise[]>([]);
   const [workoutName, setWorkoutName] = useState("");
   const [savedPrevious, setSavedPrevious] = useState<PreviousSetsByExercise>({});
@@ -267,6 +293,9 @@ export default function Home() {
   }, [screen, workoutStartedAt]);
 
   useEffect(() => {
+    const settingsLoad = loadAppSettings();
+    setAppSettings(settingsLoad.settings);
+    if (settingsLoad.error) setSettingsLoadError(settingsLoad.error);
     const customExerciseLoad = loadCustomExercises();
     setCustomExercises(customExerciseLoad.exercises);
     if (customExerciseLoad.error) setCustomExerciseStorageError(customExerciseLoad.error);
@@ -293,8 +322,10 @@ export default function Home() {
       : "",
     [dashboardSummary.latestWorkout, currentLocalDateKey],
   );
+  const resolvedDisplayName = getResolvedDisplayName(appSettings);
+  const displayInitials = getDisplayInitials(resolvedDisplayName);
 
-  const totalVolume = loggedExercises.reduce(
+  const liveDisplayVolume = loggedExercises.reduce(
     (total, exercise) =>
       total + exercise.sets.reduce((setTotal, set) => setTotal + completedSetVolume(set), 0),
     0,
@@ -333,6 +364,86 @@ export default function Home() {
     setCustomExercises(nextExercises);
     setCustomExerciseStorageError("");
     return true;
+  }
+
+  function commitAppSettings(nextSettings: AppSettings): SettingsActionResult {
+    const normalised = normaliseAppSettings(nextSettings);
+    if (!normalised) return { ok: false, message: "Settings contain an invalid display name or weight unit." };
+    if (workoutStartedAt !== null && normalised.weightUnit !== appSettings.weightUnit) {
+      return { ok: false, message: "Finish or cancel the active workout before changing weight units." };
+    }
+    if (!saveAppSettings(normalised)) {
+      return { ok: false, message: "Lift Off could not save settings on this device. Your entered values are still available." };
+    }
+
+    const unitChanged = normalised.weightUnit !== appSettings.weightUnit;
+    setAppSettings(normalised);
+    setSettingsLoadError("");
+    return {
+      ok: true,
+      message: unitChanged
+        ? `Weight display changed to ${normalised.weightUnit === "kg" ? "kilograms" : "pounds"}. Stored workout data remains in kilograms.`
+        : normalised.displayName
+          ? `Display name saved as ${normalised.displayName}.`
+          : "Display name cleared. Athlete will be used in the dashboard greeting.",
+    };
+  }
+
+  function applyImportedWorkoutHistory(nextHistory: SavedWorkout[]): SettingsActionResult {
+    if (workoutStartedAt !== null) {
+      return { ok: false, message: "Finish or cancel the active workout before importing workout data." };
+    }
+
+    const rebuiltPrevious = rebuildPreviousSetsFromHistory(nextHistory);
+    const result = writeWorkoutDataWithRollback(nextHistory, rebuiltPrevious);
+    if (!result.ok) return { ok: false, message: result.message };
+
+    setWorkoutHistory(nextHistory);
+    setSavedPrevious(rebuiltPrevious);
+    setExpandedWorkoutIds([]);
+    setCompletedMessage("");
+    return {
+      ok: true,
+      message: `Workout history restored with ${nextHistory.length} ${nextHistory.length === 1 ? "workout" : "workouts"}. Previous-set comparisons were rebuilt.`,
+    };
+  }
+
+  function clearWorkoutData(): SettingsActionResult {
+    if (workoutStartedAt !== null) {
+      return { ok: false, message: "Finish or cancel the active workout before clearing workout data." };
+    }
+
+    const result = removeStorageKeysWithRollback(WORKOUT_DATA_KEYS, "Clear workout data");
+    if (!result.ok) return { ok: false, message: result.message };
+    setWorkoutHistory([]);
+    setSavedPrevious({});
+    setExpandedWorkoutIds([]);
+    setCompletedMessage("");
+    return { ok: true, message: "Workout history and previous-set comparisons were cleared. Settings, templates and custom exercises were preserved." };
+  }
+
+  function resetAllAppData(): SettingsActionResult {
+    if (workoutStartedAt !== null) {
+      return { ok: false, message: "Finish or cancel the active workout before resetting app data." };
+    }
+
+    const result = removeStorageKeysWithRollback(ALL_LIFT_OFF_KEYS, "Reset all app data");
+    if (!result.ok) return { ok: false, message: result.message };
+
+    setWorkoutHistory([]);
+    setSavedPrevious({});
+    setWorkoutTemplates(getDefaultTemplates());
+    setCustomExercises([]);
+    setAppSettings(getDefaultAppSettings());
+    setExpandedWorkoutIds([]);
+    setTemplateDraft(null);
+    setEditingTemplateId(null);
+    setTemplateError("");
+    setTemplateSelectionError("");
+    setCustomExerciseStorageError("");
+    setSettingsLoadError("");
+    setCompletedMessage("");
+    return { ok: true, message: "All Lift Off data was reset. Source templates, built-in exercises and kilogram defaults are active." };
   }
 
   function beginWorkout(name: string, exerciseIds: string[]) {
@@ -578,8 +689,9 @@ export default function Home() {
       name: exercise.name,
       muscle: exercise.muscle,
       equipment: exercise.equipment,
-      sets: exercise.sets.map(toSavedSet),
+      sets: exercise.sets.map((set) => toSavedSet(set, appSettings.weightUnit)),
     }));
+    const savedSummary = calculateSavedWorkoutSummary(savedExercises);
     const savedWorkout: SavedWorkout = {
       id: createWorkoutId(),
       name: workoutName,
@@ -587,32 +699,30 @@ export default function Home() {
       finishedAt: new Date(finishedAt).toISOString(),
       durationSeconds: Math.max(0, Math.floor((finishedAt - workoutStartedAt) / 1000)),
       exercises: savedExercises,
-      totalVolume,
-      exerciseCount: savedExercises.length,
-      completedSetCount: completedSets.length,
+      ...savedSummary,
     };
     const nextHistory = [savedWorkout, ...workoutHistory].sort(
       (first, second) => Date.parse(second.startedAt) - Date.parse(first.startedAt),
     );
 
-    if (!saveWorkoutHistory(nextHistory)) {
-      setWorkoutError("Lift Off could not save this workout on your device. Your workout is still open, so please try again.");
+    const newPrevious: PreviousSetsByExercise = { ...savedPrevious };
+    savedExercises.forEach((exercise) => {
+      const completed: PreviousSet[] = exercise.sets.filter(isValidCompletedSavedSet).map((set) => ({
+        weight: set.weight!,
+        reps: set.reps!,
+      }));
+      if (completed.length > 0) newPrevious[exercise.exerciseId] = completed;
+    });
+
+    const storageResult = writeWorkoutDataWithRollback(nextHistory, newPrevious);
+    if (!storageResult.ok) {
+      setWorkoutError(`${storageResult.message} Your workout is still open, so please try again.`);
       return;
     }
 
-    const newPrevious: PreviousSetsByExercise = { ...savedPrevious };
-    loggedExercises.forEach((exercise) => {
-      const completed: PreviousSet[] = exercise.sets.filter(isValidCompletedSet).map((set) => ({
-        weight: Number(set.weight),
-        reps: Number(set.reps),
-      }));
-      if (completed.length > 0) newPrevious[exercise.id] = completed;
-    });
-
     setWorkoutHistory(nextHistory);
     setSavedPrevious(newPrevious);
-    savePreviousSets(newPrevious);
-    setCompletedMessage(`Workout saved · ${savedExercises.length} exercises · ${Math.round(totalVolume).toLocaleString()} kg`);
+    setCompletedMessage(`Workout saved · ${savedExercises.length} exercises · ${formatVolumeFromKilograms(savedSummary.totalVolume, appSettings.weightUnit)}`);
     setLoggedExercises([]);
     setWorkoutName("");
     setWorkoutStartedAt(null);
@@ -925,7 +1035,7 @@ export default function Home() {
                           <span><strong>{formatTime(workout.durationSeconds)}</strong><small>Duration</small></span>
                           <span><strong>{workout.exerciseCount}</strong><small>Exercises</small></span>
                           <span><strong>{workout.completedSetCount}</strong><small>Completed sets</small></span>
-                          <span><strong>{Math.round(workout.totalVolume).toLocaleString()} kg</strong><small>Volume</small></span>
+                          <span><strong>{formatVolumeFromKilograms(workout.totalVolume, appSettings.weightUnit)}</strong><small>Volume</small></span>
                         </span>
                       </button>
 
@@ -942,13 +1052,13 @@ export default function Home() {
                                 <table className="history-set-table">
                                   <caption className="sr-only">Sets for {exercise.name}</caption>
                                   <thead>
-                                    <tr><th>Set</th><th>kg</th><th>Reps</th><th>RPE</th><th>Status</th></tr>
+                                    <tr><th>Set</th><th>{appSettings.weightUnit}</th><th>Reps</th><th>RPE</th><th>Status</th></tr>
                                   </thead>
                                   <tbody>
                                     {exercise.sets.map((set, setIndex) => (
                                       <tr className={set.complete ? "history-set-complete" : "history-set-incomplete"} key={setIndex}>
                                         <td>{setIndex + 1}</td>
-                                        <td>{formatSavedNumber(set.weight)}</td>
+                                        <td>{set.weight === null ? "—" : formatDisplayNumber(kilogramsToDisplayWeight(set.weight, appSettings.weightUnit))}</td>
                                         <td>{formatSavedNumber(set.reps)}</td>
                                         <td>{formatSavedNumber(set.rpe)}</td>
                                         <td><span className="set-status">{set.complete ? "Completed" : "Incomplete"}</span></td>
@@ -972,7 +1082,7 @@ export default function Home() {
             <button onClick={() => setScreen("home")}><span>⌂</span>Home</button>
             <button className="nav-active" aria-current="page"><span>◷</span>History</button>
             <button onClick={() => setScreen("progress")}><span>⌁</span>Progress</button>
-            <button><span>⚙</span>Settings</button>
+            <button onClick={() => setScreen("settings")}><span>⚙</span>Settings</button>
           </nav>
         </div>
       </main>
@@ -984,8 +1094,28 @@ export default function Home() {
       <ProgressScreen
         workoutHistory={workoutHistory}
         exerciseLibrary={exerciseLibrary}
+        weightUnit={appSettings.weightUnit}
         onNavigateHome={() => setScreen("home")}
         onNavigateHistory={() => setScreen("history")}
+        onNavigateSettings={() => setScreen("settings")}
+      />
+    );
+  }
+
+  if (screen === "settings") {
+    return (
+      <SettingsScreen
+        settings={appSettings}
+        workoutHistory={workoutHistory}
+        settingsLoadError={settingsLoadError}
+        hasActiveWorkout={workoutStartedAt !== null}
+        onSaveSettings={commitAppSettings}
+        onApplyWorkoutHistory={applyImportedWorkoutHistory}
+        onClearWorkoutData={clearWorkoutData}
+        onResetAllData={resetAllAppData}
+        onNavigateHome={() => setScreen("home")}
+        onNavigateHistory={() => setScreen("history")}
+        onNavigateProgress={() => setScreen("progress")}
       />
     );
   }
@@ -1004,7 +1134,7 @@ export default function Home() {
             <p className="eyebrow">{today}</p>
             <div className="workout-heading-row">
               <h1>{workoutName}</h1>
-              {totalVolume > 0 && <span className="volume-pill">{Math.round(totalVolume).toLocaleString()} kg</span>}
+              {liveDisplayVolume > 0 && <span className="volume-pill">{formatDisplayNumber(liveDisplayVolume)} {appSettings.weightUnit}</span>}
             </div>
             <div className="timer" aria-label={`Workout duration ${formatTime(seconds)}`}>{formatTime(seconds)}</div>
           </section>
@@ -1041,19 +1171,19 @@ export default function Home() {
 
                   <div className="set-table">
                     <div className="set-row set-labels">
-                      <span>Set</span><span>Previous</span><span>kg</span><span>Reps</span><span>RPE</span><span />
+                      <span>Set</span><span>Previous</span><span>{appSettings.weightUnit}</span><span>Reps</span><span>RPE</span><span />
                     </div>
                     {exercise.sets.map((set, index) => {
                       const previous = exercise.previous[index];
                       return (
                         <div className="set-row" key={index}>
                           <span className="set-number">{index + 1}</span>
-                          <span className="previous-value">{previous ? `${previous.weight} × ${previous.reps}` : "—"}</span>
+                          <span className="previous-value">{previous ? `${formatWeightFromKilograms(previous.weight, appSettings.weightUnit)} × ${formatDisplayNumber(previous.reps)}` : "—"}</span>
                           <input
                             inputMode="decimal"
-                            aria-label={`${exercise.name} set ${index + 1} weight in kilograms`}
+                            aria-label={`${exercise.name} set ${index + 1} weight in ${appSettings.weightUnit === "kg" ? "kilograms" : "pounds"}`}
                             value={set.weight}
-                            placeholder={previous ? String(previous.weight) : "0"}
+                            placeholder={previous ? formatWeightInputFromKilograms(previous.weight, appSettings.weightUnit) : "0"}
                             onChange={(event) => updateSet(exercise.sessionId, index, "weight", event.target.value)}
                           />
                           <input
@@ -1131,12 +1261,12 @@ export default function Home() {
       <div className="phone-layout dashboard">
         <header className="topbar">
           <div className="brand-lockup compact"><RocketMark /><span>LIFT OFF</span></div>
-          <button className="profile-button" aria-label="Profile">AS</button>
+          <button className="profile-button" aria-label={`Open Settings for ${resolvedDisplayName}`} onClick={() => setScreen("settings")}>{displayInitials}</button>
         </header>
 
         <section className="greeting">
           <p className="eyebrow">{today}</p>
-          <h1>Ready to lift?</h1>
+          <h1>Ready to lift, {resolvedDisplayName}?</h1>
           <p>Make today&apos;s numbers count.</p>
         </section>
 
@@ -1161,7 +1291,7 @@ export default function Home() {
             </article>
             <article className="stat-card">
               <span className="stat-symbol">Σ</span>
-              <strong>{formatCompactVolume(dashboardSummary.completedVolumeThisWeek)}</strong>
+              <strong>{formatCompactVolumeFromKilograms(dashboardSummary.completedVolumeThisWeek, appSettings.weightUnit)}</strong>
               <p>Volume</p>
             </article>
             <article className="stat-card highlight-stat">
@@ -1182,7 +1312,7 @@ export default function Home() {
                 {dashboardSummary.latestWorkout.completedSetCount} completed {pluralise(dashboardSummary.latestWorkout.completedSetCount, "set")}
               </p>
               <p className="latest-session-total">
-                {formatFullVolume(dashboardSummary.latestWorkout.totalVolume)} across {formatCompactDuration(dashboardSummary.latestWorkout.durationSeconds)}
+                {formatVolumeFromKilograms(dashboardSummary.latestWorkout.totalVolume, appSettings.weightUnit)} across {formatCompactDuration(dashboardSummary.latestWorkout.durationSeconds)}
               </p>
             </>
           ) : (
@@ -1197,7 +1327,7 @@ export default function Home() {
           <button className="nav-active" aria-current="page"><span>⌂</span>Home</button>
           <button onClick={() => setScreen("history")}><span>◷</span>History</button>
           <button onClick={() => setScreen("progress")}><span>⌁</span>Progress</button>
-          <button><span>⚙</span>Settings</button>
+          <button onClick={() => setScreen("settings")}><span>⚙</span>Settings</button>
         </nav>
       </div>
     </main>
