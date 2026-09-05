@@ -1,5 +1,6 @@
-import { useId, useMemo } from "react";
+import { useId, useMemo, useRef } from "react";
 import type { Equipment, Exercise, MuscleGroup } from "./exercises";
+import { useDialogFocus } from "./useDialogFocus";
 
 type ExercisePickerProps = {
   title: string;
@@ -38,6 +39,9 @@ export default function ExercisePicker({
 }: ExercisePickerProps) {
   const titleId = useId();
   const resultCountId = useId();
+  const dialogRef = useRef<HTMLElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useDialogFocus(true, dialogRef, searchRef, onClose);
   const muscleOptions = useMemo(() => uniqueSorted(exercises.map((exercise) => exercise.muscle)), [exercises]);
   const equipmentOptions = useMemo(() => uniqueSorted(exercises.map((exercise) => exercise.equipment)), [exercises]);
   const filteredExercises = useMemo(() => {
@@ -52,13 +56,19 @@ export default function ExercisePicker({
   }, [equipmentFilter, exercises, muscleFilter, search]);
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
       <section
+        ref={dialogRef}
         className="exercise-picker"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={resultCountId}
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal-handle" />
@@ -70,7 +80,7 @@ export default function ExercisePicker({
         <label className="search-box">
           <span aria-hidden="true">⌕</span>
           <input
-            autoFocus
+            ref={searchRef}
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search exercise, muscle or equipment"

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ConfirmDialog from "./ConfirmDialog";
 import {
   EQUIPMENT_TYPES,
   MUSCLE_GROUPS,
@@ -12,6 +13,7 @@ import {
   getExerciseIdentityKey,
   type CustomExerciseDraft,
 } from "./customExercises";
+import { validateExerciseName } from "./workoutValidation";
 import type { WorkoutTemplate } from "./workoutTemplates";
 
 type ExerciseManagerProps = {
@@ -21,6 +23,7 @@ type ExerciseManagerProps = {
   storageError: string;
   onCommit: (exercises: CustomExercise[]) => boolean;
   onBack: () => void;
+  onDraftStateChange?: (hasDraft: boolean) => void;
 };
 
 type FieldErrors = Partial<Record<keyof CustomExerciseDraft, string>>;
@@ -40,6 +43,7 @@ export default function ExerciseManager({
   storageError,
   onCommit,
   onBack,
+  onDraftStateChange,
 }: ExerciseManagerProps) {
   const [search, setSearch] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | "">("");
@@ -52,9 +56,21 @@ export default function ExerciseManager({
   const [managerMessage, setManagerMessage] = useState("");
   const [managerError, setManagerError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [exerciseToDelete, setExerciseToDelete] = useState<CustomExercise | null>(null);
+  const [confirmCancelDraft, setConfirmCancelDraft] = useState(false);
+  const [cancelThenBack, setCancelThenBack] = useState(false);
+
+  useEffect(() => { headingRef.current?.focus(); }, []);
+  useEffect(() => { onDraftStateChange?.(showForm); }, [onDraftStateChange, showForm]);
+  useEffect(() => () => onDraftStateChange?.(false), [onDraftStateChange]);
 
   useEffect(() => {
-    if (showForm) formRef.current?.scrollIntoView({ block: "start" });
+    if (showForm) {
+      formRef.current?.scrollIntoView({ block: "start" });
+      nameInputRef.current?.focus();
+    }
   }, [editingId, showForm]);
 
   const muscleOptions = useMemo(() => uniqueSorted(exercises.map((exercise) => exercise.muscle)), [exercises]);
@@ -99,6 +115,20 @@ export default function ExerciseManager({
     setFormError("");
   }
 
+  function requestCloseForm() {
+    setCancelThenBack(false);
+    setConfirmCancelDraft(true);
+  }
+
+  function requestBack() {
+    if (!showForm) {
+      onBack();
+      return;
+    }
+    setCancelThenBack(true);
+    setConfirmCancelDraft(true);
+  }
+
   function updateDraft<Field extends keyof CustomExerciseDraft>(field: Field, value: CustomExerciseDraft[Field]) {
     setDraft((current) => ({ ...current, [field]: value }));
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
@@ -108,7 +138,8 @@ export default function ExerciseManager({
   function submitExercise() {
     const nextFieldErrors: FieldErrors = {};
     const name = draft.name.trim();
-    if (!name) nextFieldErrors.name = "Enter an exercise name.";
+    const nameError = validateExerciseName(draft.name);
+    if (nameError) nextFieldErrors.name = nameError;
     if (!draft.muscle) nextFieldErrors.muscle = "Choose a muscle group.";
     if (!draft.equipment) nextFieldErrors.equipment = "Choose equipment.";
 
@@ -173,16 +204,16 @@ export default function ExerciseManager({
       return;
     }
 
-    if (!window.confirm(`Delete ${exercise.name}? Saved workouts and previous-set history will remain on this device.`)) return;
-
     const nextExercises = customExercises.filter((candidate) => candidate.id !== exercise.id);
     if (!onCommit(nextExercises)) {
       setManagerError(`Lift Off could not delete ${exercise.name}. The saved exercise is unchanged.`);
+      setExerciseToDelete(null);
       return;
     }
 
     if (editingId === exercise.id) closeForm();
     setManagerMessage(`${exercise.name} was deleted. Historical workout data was preserved.`);
+    setExerciseToDelete(null);
   }
 
   function resetFilters() {
@@ -195,7 +226,7 @@ export default function ExerciseManager({
     <main className="app-shell">
       <div className="phone-layout exercise-manager-layout">
         <header className="history-header">
-          <button type="button" className="text-button history-back-button" onClick={onBack}>
+          <button type="button" className="text-button history-back-button" onClick={requestBack}>
             <span aria-hidden="true">←</span> Templates
           </button>
           <span className="progress-header-mark">LIFT OFF</span>
@@ -203,7 +234,7 @@ export default function ExerciseManager({
 
         <section className="template-intro" aria-labelledby="manage-exercises-title">
           <p className="eyebrow">Exercise library</p>
-          <h1 id="manage-exercises-title">Manage exercises.</h1>
+          <h1 id="manage-exercises-title" ref={headingRef} tabIndex={-1}>Manage exercises.</h1>
           <p>Browse built-in movements or create exercises that match your training.</p>
           <button type="button" className="primary-button manage-create-button" onClick={openCreateForm}>
             Create custom exercise
@@ -221,13 +252,13 @@ export default function ExerciseManager({
                 <p className="eyebrow">{editingId === null ? "New exercise" : "Edit custom exercise"}</p>
                 <h2>{editingId === null ? "Add an exercise" : "Update exercise details"}</h2>
               </div>
-              <button type="button" onClick={closeForm}>Cancel</button>
+              <button type="button" onClick={requestCloseForm}>Cancel</button>
             </div>
 
             <label>
               <span>Exercise name</span>
               <input
-                autoFocus
+                ref={nameInputRef}
                 value={draft.name}
                 onChange={(event) => updateDraft("name", event.target.value)}
                 aria-invalid={Boolean(fieldErrors.name)}
@@ -315,7 +346,7 @@ export default function ExerciseManager({
                   {exercise.kind === "custom" && (
                     <div className="managed-exercise-actions">
                       <button type="button" onClick={() => openEditForm(exercise)} aria-label={`Edit ${exercise.name}`}>Edit</button>
-                      <button type="button" className="danger-text-button" onClick={() => deleteExercise(exercise)} aria-label={`Delete ${exercise.name}`}>Delete</button>
+                      <button type="button" className="danger-text-button" onClick={() => { clearOperationMessages(); setExerciseToDelete(exercise); }} aria-label={`Delete ${exercise.name}`}>Delete</button>
                     </div>
                   )}
                 </li>
@@ -324,6 +355,29 @@ export default function ExerciseManager({
           )}
         </section>
       </div>
+      <ConfirmDialog
+        open={exerciseToDelete !== null}
+        title="Delete custom exercise?"
+        description={exerciseToDelete ? `Delete ${exerciseToDelete.name}? Saved workouts and previous-set History will remain on this device.` : ""}
+        confirmLabel="Delete exercise"
+        destructive
+        onCancel={() => setExerciseToDelete(null)}
+        onConfirm={() => { if (exerciseToDelete) deleteExercise(exerciseToDelete); }}
+      />
+      <ConfirmDialog
+        open={confirmCancelDraft}
+        title="Discard exercise draft?"
+        description="Your unsaved custom-exercise input will be discarded. Saved exercises will remain unchanged."
+        confirmLabel="Discard draft"
+        destructive
+        onCancel={() => { setConfirmCancelDraft(false); setCancelThenBack(false); }}
+        onConfirm={() => {
+          setConfirmCancelDraft(false);
+          closeForm();
+          if (cancelThenBack) onBack();
+          setCancelThenBack(false);
+        }}
+      />
     </main>
   );
 }

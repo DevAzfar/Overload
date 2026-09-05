@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ConfirmDialog from "./ConfirmDialog";
 import {
   DISPLAY_NAME_MAX_LENGTH,
   getResolvedDisplayName,
@@ -24,6 +25,7 @@ type SettingsScreenProps = {
   settings: AppSettings;
   workoutHistory: SavedWorkout[];
   settingsLoadError: string;
+  historyRecoveryWarning?: string;
   hasActiveWorkout: boolean;
   onSaveSettings: (settings: AppSettings) => SettingsActionResult;
   onApplyWorkoutHistory: (history: SavedWorkout[]) => SettingsActionResult;
@@ -32,6 +34,7 @@ type SettingsScreenProps = {
   onNavigateHome: () => void;
   onNavigateHistory: () => void;
   onNavigateProgress: () => void;
+  onDraftStateChange?: (hasDraft: boolean) => void;
 };
 
 function formatImportDate(dateString: string): string {
@@ -46,6 +49,7 @@ export default function SettingsScreen({
   settings,
   workoutHistory,
   settingsLoadError,
+  historyRecoveryWarning,
   hasActiveWorkout,
   onSaveSettings,
   onApplyWorkoutHistory,
@@ -54,6 +58,7 @@ export default function SettingsScreen({
   onNavigateHome,
   onNavigateHistory,
   onNavigateProgress,
+  onDraftStateChange,
 }: SettingsScreenProps) {
   const [displayNameDraft, setDisplayNameDraft] = useState(settings.displayName);
   const [profileError, setProfileError] = useState("");
@@ -63,6 +68,15 @@ export default function SettingsScreen({
   const [importError, setImportError] = useState("");
   const [allowConflictSkips, setAllowConflictSkips] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [confirmation, setConfirmation] = useState<"replace" | "clear" | "reset" | null>(null);
+  const [navigationTarget, setNavigationTarget] = useState<"home" | "history" | "progress" | null>(null);
+  const hasSettingsDraft = displayNameDraft !== settings.displayName || importData !== null;
+  const destructiveDataActionsBlocked = hasActiveWorkout || hasSettingsDraft;
+
+  useEffect(() => { headingRef.current?.focus(); }, []);
+  useEffect(() => { onDraftStateChange?.(hasSettingsDraft); }, [hasSettingsDraft, onDraftStateChange]);
+  useEffect(() => () => onDraftStateChange?.(false), [onDraftStateChange]);
 
   useEffect(() => {
     setDisplayNameDraft(settings.displayName);
@@ -131,7 +145,20 @@ export default function SettingsScreen({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  function navigate(target: "home" | "history" | "progress") {
+    if (target === "home") onNavigateHome();
+    else if (target === "history") onNavigateHistory();
+    else onNavigateProgress();
+  }
+
+  function requestNavigation(target: "home" | "history" | "progress") {
+    if (hasSettingsDraft) setNavigationTarget(target);
+    else navigate(target);
+  }
+
   async function selectImportFile(file: File | undefined) {
+    setSettingsMessage("");
+    setSettingsError("");
     setImportData(null);
     setAllowConflictSkips(false);
     setImportError("");
@@ -181,61 +208,56 @@ export default function SettingsScreen({
 
   function applyReplace() {
     if (!importData) return;
-    const confirmed = window.confirm(
-      "Replace all current workout history with this CSV? Previous-set comparisons will be rebuilt. Templates, custom exercises and settings will be preserved.",
-    );
-    if (!confirmed) {
-      resetImportSelection();
-      setSettingsMessage("Workout-history replacement was cancelled.");
-      return;
-    }
-
     const result = onApplyWorkoutHistory(importData.workouts);
     showActionResult(result);
-    if (result.ok) resetImportSelection();
+    setConfirmation(null);
+    if (result.ok) {
+      resetImportSelection();
+    }
   }
 
   function clearWorkoutData() {
-    const confirmed = window.confirm(
-      "Clear workout data? This deletes workout history and previous-set comparisons. Settings, templates and custom exercises will be preserved.",
-    );
-    if (!confirmed) {
-      setSettingsMessage("Clear workout data was cancelled.");
+    if (destructiveDataActionsBlocked) {
+      setSettingsError("Finish or cancel the active workout, settings draft or pending CSV import before clearing data.");
       return;
     }
     const result = onClearWorkoutData();
     showActionResult(result);
-    if (result.ok) resetImportSelection();
+    setConfirmation(null);
+    if (result.ok) {
+      resetImportSelection();
+    }
   }
 
   function resetAllData() {
-    const confirmed = window.confirm(
-      "Reset all Lift Off data on this device? This deletes workout history, previous sets, saved template edits, custom templates, custom exercises and settings. Unrelated website storage is not touched.",
-    );
-    if (!confirmed) {
-      setSettingsMessage("Reset all app data was cancelled.");
+    if (destructiveDataActionsBlocked) {
+      setSettingsError("Finish or cancel the active workout, settings draft or pending CSV import before resetting data.");
       return;
     }
     const result = onResetAllData();
     showActionResult(result);
-    if (result.ok) resetImportSelection();
+    setConfirmation(null);
+    if (result.ok) {
+      resetImportSelection();
+    }
   }
 
   return (
     <main className="app-shell">
       <div className="phone-layout settings-layout">
         <header className="progress-header">
-          <button className="text-button history-back-button" onClick={onNavigateHome}><span aria-hidden="true">←</span> Home</button>
+          <button className="text-button history-back-button" onClick={() => requestNavigation("home")}><span aria-hidden="true">←</span> Home</button>
           <span className="progress-header-mark">LIFT OFF</span>
         </header>
 
         <section className="settings-intro" aria-labelledby="settings-title">
           <p className="eyebrow">Device preferences</p>
-          <h1 id="settings-title">Settings</h1>
+          <h1 id="settings-title" ref={headingRef} tabIndex={-1}>Settings</h1>
           <p>Personalise Lift Off and control the workout data stored on this device.</p>
         </section>
 
         {settingsLoadError && <p className="settings-alert" role="alert">{settingsLoadError}</p>}
+        {historyRecoveryWarning && <p className="settings-alert" role="status">{historyRecoveryWarning}</p>}
         {settingsError && <p className="settings-alert" role="alert">{settingsError}</p>}
         {settingsMessage && <p className="settings-success" role="status">{settingsMessage}</p>}
         {hasActiveWorkout && <p className="settings-alert" role="alert">Finish or cancel the active workout before importing, changing units or deleting data.</p>}
@@ -298,6 +320,11 @@ export default function SettingsScreen({
                 <div><dt>Already present</dt><dd>{conflicts.exactDuplicateIds.length}</dd></div>
                 <div><dt>ID conflicts</dt><dd>{conflicts.conflictingIds.length}</dd></div>
               </dl>
+              {importData.legacyRpeCount > 0 && (
+                <p className="settings-alert compact" role="status">
+                  {importData.legacyRpeCount} legacy RPE {importData.legacyRpeCount === 1 ? "value is" : "values are"} outside 1–10. Schema-v1 compatibility preserves these values; edit them before saving that workout again.
+                </p>
+              )}
               {conflicts.conflictingIds.length > 0 && (
                 <label className="conflict-confirmation">
                   <input type="checkbox" checked={allowConflictSkips} onChange={(event) => setAllowConflictSkips(event.target.checked)} />
@@ -306,7 +333,7 @@ export default function SettingsScreen({
               )}
               <div className="import-actions">
                 <button type="button" className="primary-button" disabled={hasActiveWorkout} onClick={applyMerge}>Merge with existing</button>
-                <button type="button" className="secondary-settings-button destructive-outline" disabled={hasActiveWorkout} onClick={applyReplace}>Replace workout history</button>
+                <button type="button" className="secondary-settings-button destructive-outline" disabled={hasActiveWorkout} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("replace"); }}>Replace workout history</button>
                 <button type="button" className="text-button" onClick={resetImportSelection}>Cancel import</button>
               </div>
             </div>
@@ -317,21 +344,61 @@ export default function SettingsScreen({
           <div className="settings-section-heading"><p className="eyebrow">Data deletion</p><h2 id="delete-settings-title">Clear device data</h2></div>
           <div className="danger-action">
             <div><h3>Clear workout data</h3><p>Deletes History and previous-set comparisons. Preserves settings, templates and custom exercises.</p></div>
-            <button type="button" disabled={hasActiveWorkout} onClick={clearWorkoutData}>Clear workout data</button>
+            <button type="button" disabled={destructiveDataActionsBlocked} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("clear"); }}>Clear workout data</button>
           </div>
           <div className="danger-action">
             <div><h3>Reset all app data</h3><p>Deletes every Lift Off-owned localStorage record and restores source defaults. Unrelated website data is preserved.</p></div>
-            <button type="button" disabled={hasActiveWorkout} onClick={resetAllData}>Reset all app data</button>
+            <button type="button" disabled={destructiveDataActionsBlocked} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("reset"); }}>Reset all app data</button>
           </div>
         </section>
 
         <nav className="bottom-nav" aria-label="Main navigation">
-          <button onClick={onNavigateHome}><span>⌂</span>Home</button>
-          <button onClick={onNavigateHistory}><span>▷</span>History</button>
-          <button onClick={onNavigateProgress}><span>⌁</span>Progress</button>
+          <button onClick={() => requestNavigation("home")}><span>⌂</span>Home</button>
+          <button onClick={() => requestNavigation("history")}><span>▷</span>History</button>
+          <button onClick={() => requestNavigation("progress")}><span>⌁</span>Progress</button>
           <button className="nav-active" aria-current="page"><span>⚙</span>Settings</button>
         </nav>
       </div>
+      <ConfirmDialog
+        open={confirmation === "replace"}
+        title="Replace workout History?"
+        description="Replace all current workout History with this validated CSV? Previous-set comparisons will be rebuilt. Templates, custom exercises and settings will be preserved."
+        confirmLabel="Replace workout History"
+        destructive
+        onCancel={() => setConfirmation(null)}
+        onConfirm={applyReplace}
+      />
+      <ConfirmDialog
+        open={confirmation === "clear"}
+        title="Clear workout data?"
+        description="This deletes workout History and previous-set comparisons. Settings, templates and custom exercises will be preserved."
+        confirmLabel="Clear workout data"
+        destructive
+        onCancel={() => setConfirmation(null)}
+        onConfirm={clearWorkoutData}
+      />
+      <ConfirmDialog
+        open={confirmation === "reset"}
+        title="Reset all Lift Off data?"
+        description="This deletes every Lift Off-owned workout, previous-set, template, custom-exercise and settings record. Unrelated website storage is not touched."
+        confirmLabel="Reset all app data"
+        destructive
+        onCancel={() => setConfirmation(null)}
+        onConfirm={resetAllData}
+      />
+      <ConfirmDialog
+        open={navigationTarget !== null}
+        title="Discard Settings work?"
+        description="Your unsaved display-name draft or validated pending CSV import will be discarded. Saved device data will remain unchanged."
+        confirmLabel="Discard and leave"
+        destructive
+        onCancel={() => setNavigationTarget(null)}
+        onConfirm={() => {
+          const target = navigationTarget;
+          setNavigationTarget(null);
+          if (target) navigate(target);
+        }}
+      />
     </main>
   );
 }

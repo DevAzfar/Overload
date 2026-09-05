@@ -45,6 +45,7 @@ export type WorkoutCsvImport = {
   setCount: number;
   earliestStartedAt: string;
   latestStartedAt: string;
+  legacyRpeCount: number;
 };
 
 export type WorkoutCsvParseResult =
@@ -136,6 +137,9 @@ export function serializeWorkoutHistoryToCsv(history: readonly SavedWorkout[]): 
       exercise.sets.forEach((set, setIndex) => {
         if (set.weight !== null && set.weight < 0) {
           throw new Error(`Workout ${workout.id} exercise ${exerciseIndex + 1} set ${setIndex + 1} has a negative weight.`);
+        }
+        if (set.reps !== null && set.reps <= 0) {
+          throw new Error(`Workout ${workout.id} exercise ${exerciseIndex + 1} set ${setIndex + 1} has non-positive repetitions.`);
         }
         if (rows.length > WORKOUT_CSV_MAX_ROWS) {
           throw new Error(`Workout history exceeds the ${WORKOUT_CSV_MAX_ROWS.toLocaleString()}-row CSV limit.`);
@@ -328,6 +332,7 @@ export function parseWorkoutCsv(source: string): WorkoutCsvParseResult {
     if (dataRows.length > WORKOUT_CSV_MAX_ROWS) throw new Error(`The CSV exceeds the ${WORKOUT_CSV_MAX_ROWS.toLocaleString()}-row limit.`);
 
     const workouts = new Map<string, WorkoutAccumulator>();
+    let legacyRpeCount = 0;
     dataRows.forEach((cells, dataIndex) => {
       const rowNumber = dataIndex + 2;
       if (cells.length !== WORKOUT_CSV_HEADERS.length) {
@@ -361,6 +366,10 @@ export function parseWorkoutCsv(source: string): WorkoutCsvParseResult {
       if (set.weight !== null && set.weight < 0) {
         throw new Error(`Row ${rowNumber}: weight_kg cannot be negative.`);
       }
+      if (set.reps !== null && set.reps <= 0) {
+        throw new Error(`Row ${rowNumber}: reps must be greater than zero when supplied.`);
+      }
+      if (set.rpe !== null && (set.rpe < 1 || set.rpe > 10)) legacyRpeCount += 1;
       if (set.complete && !isValidCompletedSavedSet(set)) {
         throw new Error(`Row ${rowNumber}: a completed set requires non-negative weight_kg, repetitions above zero and an optional finite RPE.`);
       }
@@ -436,6 +445,7 @@ export function parseWorkoutCsv(source: string): WorkoutCsvParseResult {
         setCount: dataRows.length,
         earliestStartedAt: new Date(Math.min(...startedTimes)).toISOString(),
         latestStartedAt: new Date(Math.max(...startedTimes)).toISOString(),
+        legacyRpeCount,
       },
     };
   } catch (error) {

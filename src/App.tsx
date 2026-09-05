@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ConfirmDialog from "./ConfirmDialog";
 import ExerciseManager from "./ExerciseManager";
 import ExercisePicker from "./ExercisePicker";
+import HistoricalWorkoutEditor from "./HistoricalWorkoutEditor";
+import HistoryScreen from "./HistoryScreen";
 import SettingsScreen, { type SettingsActionResult } from "./SettingsScreen";
 import {
+  APP_SETTINGS_KEY,
   getDefaultAppSettings,
   getResolvedDisplayName,
   loadAppSettings,
@@ -22,15 +26,15 @@ import {
 } from "./exercises";
 import ProgressScreen from "./ProgressScreen";
 import {
+  CUSTOM_EXERCISES_KEY,
   loadCustomExercises,
   saveCustomExercises,
 } from "./customExercises";
 import {
   createWorkoutId,
   calculateSavedWorkoutSummary,
-  isValidCompletedSavedSet,
-  loadPreviousSets,
-  loadWorkoutHistory,
+  loadPreviousSetsResult,
+  loadWorkoutHistoryResult,
   type PreviousSet,
   type PreviousSetsByExercise,
   type SavedWorkout,
@@ -38,10 +42,11 @@ import {
   type SavedWorkoutSet,
 } from "./workoutHistory";
 import {
+  WORKOUT_TEMPLATES_KEY,
   createTemplateId,
   getDefaultTemplate,
   getDefaultTemplates,
-  loadWorkoutTemplates,
+  loadWorkoutTemplatesResult,
   saveWorkoutTemplates,
   type WorkoutTemplate,
 } from "./workoutTemplates";
@@ -50,20 +55,22 @@ import {
   WORKOUT_DATA_KEYS,
   rebuildPreviousSetsFromHistory,
   removeStorageKeysWithRollback,
+  readStorageSnapshot,
   writeWorkoutDataWithRollback,
 } from "./workoutDataControls";
+import { deleteWorkoutFromHistory, replaceWorkoutInHistory } from "./historyMutations";
+import { type StorageLoadStatus } from "./storageTypes";
+import { validateEditableSet, validateTemplateName, validateWorkoutName } from "./workoutValidation";
 import {
-  displayWeightToKilograms,
   formatCompactVolumeFromKilograms,
   formatDisplayNumber,
   formatVolumeFromKilograms,
   formatWeightFromKilograms,
   formatWeightInputFromKilograms,
-  kilogramsToDisplayWeight,
   type WeightUnit,
 } from "./weightUnits";
 
-type Screen = "welcome" | "home" | "templates" | "template-editor" | "exercise-manager" | "workout" | "history" | "progress" | "settings";
+type Screen = "welcome" | "home" | "templates" | "template-editor" | "exercise-manager" | "workout" | "history" | "history-editor" | "progress" | "settings";
 type SetEntry = { weight: string; reps: string; rpe: string; complete: boolean };
 type LoggedExercise = Exercise & { previous: PreviousSet[]; sessionId: string; sets: SetEntry[] };
 type LocalWeekRange = { start: Date; endExclusive: Date; endDisplay: Date };
@@ -84,59 +91,20 @@ function formatTime(totalSeconds: number) {
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
-function parseOptionalNumber(value: string): number | null {
-  if (value.trim() === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function hasValidOptionalRpe(value: string) {
-  return value.trim() === "" || parseOptionalNumber(value) !== null;
-}
-
-function isValidCompletedSet(set: SetEntry) {
-  const weight = parseOptionalNumber(set.weight);
-  const reps = parseOptionalNumber(set.reps);
-
-  return (
-    set.complete &&
-    weight !== null &&
-    weight >= 0 &&
-    reps !== null &&
-    reps > 0 &&
-    Number.isFinite(weight * reps) &&
-    hasValidOptionalRpe(set.rpe)
-  );
+function isValidCompletedSet(set: SetEntry, weightUnit: WeightUnit) {
+  const result = validateEditableSet(set, weightUnit);
+  return result.canonicalSet?.complete === true;
 }
 
 function toSavedSet(set: SetEntry, weightUnit: WeightUnit): SavedWorkoutSet {
-  const displayWeight = parseOptionalNumber(set.weight);
-  return {
-    weight: displayWeight === null ? null : displayWeightToKilograms(displayWeight, weightUnit),
-    reps: parseOptionalNumber(set.reps),
-    rpe: parseOptionalNumber(set.rpe),
-    complete: set.complete,
-  };
+  const result = validateEditableSet(set, weightUnit);
+  if (!result.canonicalSet) throw new Error("Attempted to save an invalid workout set.");
+  return result.canonicalSet;
 }
 
-function completedSetVolume(set: SetEntry) {
-  if (!isValidCompletedSet(set)) return 0;
+function completedSetVolume(set: SetEntry, weightUnit: WeightUnit) {
+  if (!isValidCompletedSet(set, weightUnit)) return 0;
   return Number(set.weight) * Number(set.reps);
-}
-
-function formatHistoryDate(dateString: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateString));
-}
-
-function formatSavedNumber(value: number | null) {
-  return value === null ? "—" : value.toLocaleString();
 }
 
 function getLocalDateKey(date: Date) {
@@ -276,9 +244,25 @@ export default function Home() {
   const [templateError, setTemplateError] = useState("");
   const [emptyWorkoutName, setEmptyWorkoutName] = useState("");
   const [templateSelectionError, setTemplateSelectionError] = useState("");
+  const [templateStorageMessage, setTemplateStorageMessage] = useState("");
   const [expandedWorkoutIds, setExpandedWorkoutIds] = useState<string[]>([]);
   const [workoutError, setWorkoutError] = useState("");
   const [completedMessage, setCompletedMessage] = useState("");
+  const [historyLoadStatus, setHistoryLoadStatus] = useState<StorageLoadStatus>("missing");
+  const [historyLoadMessage, setHistoryLoadMessage] = useState("");
+  const [historyNeedsSanitisedSave, setHistoryNeedsSanitisedSave] = useState(false);
+  const [historyActionMessage, setHistoryActionMessage] = useState("");
+  const [historyActionError, setHistoryActionError] = useState("");
+  const [historyDraft, setHistoryDraft] = useState<SavedWorkout | null>(null);
+  const [historyDraftUnit, setHistoryDraftUnit] = useState<WeightUnit>("kg");
+  const [pendingConfirmation, setPendingConfirmation] = useState<"reset-template" | "delete-template" | "discard-template" | "cancel-workout" | null>(null);
+  const [customExerciseDraftOpen, setCustomExerciseDraftOpen] = useState(false);
+  const [settingsDraftOpen, setSettingsDraftOpen] = useState(false);
+  const [crossTabConflict, setCrossTabConflict] = useState("");
+  const expectedRawValuesRef = useRef<ReadonlyMap<string, string | null>>(new Map());
+  const storageSnapshotReadyRef = useRef(false);
+  const unsafeStorageKeysRef = useRef<Set<string>>(new Set());
+  const unsafeWorkRef = useRef(false);
 
   useEffect(() => {
     if (screen !== "workout" || workoutStartedAt === null) return;
@@ -293,15 +277,103 @@ export default function Home() {
   }, [screen, workoutStartedAt]);
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const heading = document.querySelector<HTMLElement>("main h1");
+      if (!heading) return;
+      if (!heading.hasAttribute("tabindex")) heading.tabIndex = -1;
+      heading.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [screen]);
+
+  useEffect(() => {
     const settingsLoad = loadAppSettings();
     setAppSettings(settingsLoad.settings);
     if (settingsLoad.error) setSettingsLoadError(settingsLoad.error);
     const customExerciseLoad = loadCustomExercises();
     setCustomExercises(customExerciseLoad.exercises);
     if (customExerciseLoad.error) setCustomExerciseStorageError(customExerciseLoad.error);
-    setSavedPrevious(loadPreviousSets());
-    setWorkoutHistory(loadWorkoutHistory());
-    setWorkoutTemplates(loadWorkoutTemplates());
+    const previousLoad = loadPreviousSetsResult();
+    const historyLoad = loadWorkoutHistoryResult();
+    setSavedPrevious(previousLoad.data);
+    setWorkoutHistory(historyLoad.data);
+    setHistoryLoadStatus(
+      previousLoad.status === "unavailable" || previousLoad.status === "recovery-failed"
+        ? previousLoad.status
+        : historyLoad.status,
+    );
+    setHistoryLoadMessage([historyLoad.message, previousLoad.message].filter(Boolean).join(" "));
+    setHistoryNeedsSanitisedSave((historyLoad.discardedItemCount ?? 0) > 0);
+    const templateLoad = loadWorkoutTemplatesResult();
+    setWorkoutTemplates(templateLoad.templates);
+    setTemplateStorageMessage(templateLoad.message);
+    unsafeStorageKeysRef.current = new Set([
+      ...(historyLoad.status === "unavailable" || historyLoad.status === "recovery-failed" ? [WORKOUT_DATA_KEYS[0]] : []),
+      ...(previousLoad.status === "unavailable" || previousLoad.status === "recovery-failed" ? [WORKOUT_DATA_KEYS[1]] : []),
+      ...(settingsLoad.status === "unavailable" || settingsLoad.status === "recovery-failed" ? [APP_SETTINGS_KEY] : []),
+      ...(customExerciseLoad.status === "unavailable" || customExerciseLoad.status === "recovery-failed" ? [CUSTOM_EXERCISES_KEY] : []),
+      ...(templateLoad.status === "unavailable" || templateLoad.status === "recovery-failed" ? [WORKOUT_TEMPLATES_KEY] : []),
+    ]);
+    try {
+      expectedRawValuesRef.current = readStorageSnapshot(ALL_LIFT_OFF_KEYS);
+      storageSnapshotReadyRef.current = true;
+    } catch {
+      setCrossTabConflict("Lift Off could not establish a reliable device-storage snapshot. Reload before changing saved data.");
+    }
+  }, []);
+
+  unsafeWorkRef.current = workoutStartedAt !== null || historyDraft !== null || templateDraft !== null ||
+    customExerciseDraftOpen || settingsDraftOpen;
+
+  useEffect(() => {
+    function handleStorageChange(event: StorageEvent) {
+      if (event.key !== null && !ALL_LIFT_OFF_KEYS.includes(event.key as (typeof ALL_LIFT_OFF_KEYS)[number])) return;
+      if (unsafeWorkRef.current) {
+        setCrossTabConflict("Lift Off data changed in another tab while you have unsaved work. Reload and discard this draft, or keep working locally without overwriting the other tab.");
+        return;
+      }
+
+      const historyLoad = loadWorkoutHistoryResult();
+      const previousLoad = loadPreviousSetsResult();
+      const settingsLoad = loadAppSettings();
+      const customLoad = loadCustomExercises();
+      setWorkoutHistory(historyLoad.data);
+      setSavedPrevious(previousLoad.data);
+      const templateLoad = loadWorkoutTemplatesResult();
+      setWorkoutTemplates(templateLoad.templates);
+      setTemplateStorageMessage(templateLoad.message);
+      setCustomExercises(customLoad.exercises);
+      setAppSettings(settingsLoad.settings);
+      setHistoryLoadStatus(
+        previousLoad.status === "unavailable" || previousLoad.status === "recovery-failed"
+          ? previousLoad.status
+          : historyLoad.status,
+      );
+      setHistoryLoadMessage([historyLoad.message, previousLoad.message].filter(Boolean).join(" "));
+      setHistoryNeedsSanitisedSave((historyLoad.discardedItemCount ?? 0) > 0);
+      setSettingsLoadError(settingsLoad.error);
+      setCustomExerciseStorageError(customLoad.error);
+      unsafeStorageKeysRef.current = new Set([
+        ...(historyLoad.status === "unavailable" || historyLoad.status === "recovery-failed" ? [WORKOUT_DATA_KEYS[0]] : []),
+        ...(previousLoad.status === "unavailable" || previousLoad.status === "recovery-failed" ? [WORKOUT_DATA_KEYS[1]] : []),
+        ...(settingsLoad.status === "unavailable" || settingsLoad.status === "recovery-failed" ? [APP_SETTINGS_KEY] : []),
+        ...(customLoad.status === "unavailable" || customLoad.status === "recovery-failed" ? [CUSTOM_EXERCISES_KEY] : []),
+        ...(templateLoad.status === "unavailable" || templateLoad.status === "recovery-failed" ? [WORKOUT_TEMPLATES_KEY] : []),
+      ]);
+      setExpandedWorkoutIds([]);
+      setHistoryActionMessage("Saved Lift Off data was reloaded after a change in another tab.");
+      setHistoryActionError("");
+      setCrossTabConflict("");
+      try {
+        expectedRawValuesRef.current = readStorageSnapshot(ALL_LIFT_OFF_KEYS);
+        storageSnapshotReadyRef.current = true;
+      } catch {
+        setCrossTabConflict("The other-tab change was loaded, but Lift Off could not refresh its storage snapshot. Reload before changing saved data.");
+      }
+    }
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const exerciseLibrary = useMemo(() => combineExerciseLibrary(customExercises), [customExercises]);
@@ -327,9 +399,61 @@ export default function Home() {
 
   const liveDisplayVolume = loggedExercises.reduce(
     (total, exercise) =>
-      total + exercise.sets.reduce((setTotal, set) => setTotal + completedSetVolume(set), 0),
+      total + exercise.sets.reduce((setTotal, set) => setTotal + completedSetVolume(set, appSettings.weightUnit), 0),
     0,
   );
+
+  function expectedValuesFor(keys: readonly string[]) {
+    return new Map(keys.map((key) => [key, expectedRawValuesRef.current.get(key) ?? null]));
+  }
+
+  function storageKeyStillExpected(key: string): boolean {
+    if (!storageSnapshotReadyRef.current || unsafeStorageKeysRef.current.has(key)) return false;
+    try {
+      return window.localStorage.getItem(key) === (expectedRawValuesRef.current.get(key) ?? null);
+    } catch {
+      return false;
+    }
+  }
+
+  function storageKeyCouldNotBeLoaded(key: string) {
+    return !storageSnapshotReadyRef.current || unsafeStorageKeysRef.current.has(key);
+  }
+
+  function recordExpectedRawValues(values: ReadonlyMap<string, string | null>) {
+    const next = new Map(expectedRawValuesRef.current);
+    values.forEach((value, key) => next.set(key, value));
+    expectedRawValuesRef.current = next;
+    const unsafeKeys = new Set(unsafeStorageKeysRef.current);
+    values.forEach((_, key) => unsafeKeys.delete(key));
+    unsafeStorageKeysRef.current = unsafeKeys;
+  }
+
+  function workoutStorageIsSafe() {
+    return storageSnapshotReadyRef.current && WORKOUT_DATA_KEYS.every((key) => !unsafeStorageKeysRef.current.has(key));
+  }
+
+  function captureExpectedKey(key: string) {
+    try {
+      recordExpectedRawValues(new Map([[key, window.localStorage.getItem(key)]]));
+    } catch {
+      setCrossTabConflict("The change was saved, but Lift Off could not refresh its storage snapshot. Reload before making another saved-data change.");
+    }
+  }
+
+  function renderCrossTabConflict() {
+    if (!crossTabConflict) return null;
+    return (
+      <aside className="cross-tab-conflict" role="alert">
+        <strong>Another tab changed Lift Off data</strong>
+        <p>{crossTabConflict}</p>
+        <div>
+          <button type="button" onClick={() => window.location.reload()}>Reload and discard local work</button>
+          <button type="button" onClick={() => setCrossTabConflict("")}>Keep local draft</button>
+        </div>
+      </aside>
+    );
+  }
 
   function createLoggedExercise(exercise: Exercise): LoggedExercise {
     const previous = (savedPrevious[exercise.id] ?? getFallbackPreviousSets(exercise.id))
@@ -339,6 +463,7 @@ export default function Home() {
 
   function openTemplateSelection() {
     setTemplateSelectionError("");
+    setTemplateStorageMessage("");
     setEmptyWorkoutName("");
     setScreen("templates");
   }
@@ -356,6 +481,14 @@ export default function Home() {
   }
 
   function commitCustomExercises(nextExercises: CustomExercise[]): boolean {
+    if (!storageKeyStillExpected(CUSTOM_EXERCISES_KEY)) {
+      const couldNotLoad = storageKeyCouldNotBeLoaded(CUSTOM_EXERCISES_KEY);
+      setCustomExerciseStorageError(couldNotLoad
+        ? "Custom exercises could not be read reliably. Reload before saving this draft; your input is still here."
+        : "Custom exercises changed in another tab. Reload before saving this draft; your input is still here.");
+      if (!couldNotLoad) setCrossTabConflict("Custom exercises changed in another tab. This local draft has not overwritten them.");
+      return false;
+    }
     if (!saveCustomExercises(nextExercises)) {
       setCustomExerciseStorageError("Lift Off could not write custom exercises to device storage.");
       return false;
@@ -363,14 +496,22 @@ export default function Home() {
 
     setCustomExercises(nextExercises);
     setCustomExerciseStorageError("");
+    captureExpectedKey(CUSTOM_EXERCISES_KEY);
     return true;
   }
 
   function commitAppSettings(nextSettings: AppSettings): SettingsActionResult {
     const normalised = normaliseAppSettings(nextSettings);
     if (!normalised) return { ok: false, message: "Settings contain an invalid display name or weight unit." };
-    if (workoutStartedAt !== null && normalised.weightUnit !== appSettings.weightUnit) {
-      return { ok: false, message: "Finish or cancel the active workout before changing weight units." };
+    if ((workoutStartedAt !== null || historyDraft !== null) && normalised.weightUnit !== appSettings.weightUnit) {
+      return { ok: false, message: "Finish or cancel the active workout or historical edit before changing weight units." };
+    }
+    if (!storageKeyStillExpected(APP_SETTINGS_KEY)) {
+      const couldNotLoad = storageKeyCouldNotBeLoaded(APP_SETTINGS_KEY);
+      if (!couldNotLoad) setCrossTabConflict("Settings changed in another tab. This local draft has not overwritten them.");
+      return { ok: false, message: couldNotLoad
+        ? "Settings could not be read reliably. Reload before saving; your entered values are still available."
+        : "Settings changed in another tab. Reload before saving; your entered values are still available." };
     }
     if (!saveAppSettings(normalised)) {
       return { ok: false, message: "Lift Off could not save settings on this device. Your entered values are still available." };
@@ -379,6 +520,7 @@ export default function Home() {
     const unitChanged = normalised.weightUnit !== appSettings.weightUnit;
     setAppSettings(normalised);
     setSettingsLoadError("");
+    captureExpectedKey(APP_SETTINGS_KEY);
     return {
       ok: true,
       message: unitChanged
@@ -390,18 +532,30 @@ export default function Home() {
   }
 
   function applyImportedWorkoutHistory(nextHistory: SavedWorkout[]): SettingsActionResult {
-    if (workoutStartedAt !== null) {
-      return { ok: false, message: "Finish or cancel the active workout before importing workout data." };
+    if (workoutStartedAt !== null || historyDraft !== null || templateDraft !== null || customExerciseDraftOpen) {
+      return { ok: false, message: "Finish or cancel all other active drafts before importing workout data." };
+    }
+    if (!workoutStorageIsSafe()) {
+      return { ok: false, message: "Lift Off could not verify current device data. Reload before importing; the validated import is still available." };
     }
 
     const rebuiltPrevious = rebuildPreviousSetsFromHistory(nextHistory);
-    const result = writeWorkoutDataWithRollback(nextHistory, rebuiltPrevious);
-    if (!result.ok) return { ok: false, message: result.message };
+    const result = writeWorkoutDataWithRollback(nextHistory, rebuiltPrevious, {
+      expectedRawValues: expectedValuesFor(WORKOUT_DATA_KEYS),
+    });
+    if (!result.ok) {
+      if (result.conflict) setCrossTabConflict("Workout data changed in another tab. The validated import is still available and was not applied.");
+      return { ok: false, message: result.message };
+    }
 
     setWorkoutHistory(nextHistory);
     setSavedPrevious(rebuiltPrevious);
+    recordExpectedRawValues(result.rawValues);
     setExpandedWorkoutIds([]);
     setCompletedMessage("");
+    setHistoryLoadStatus("loaded");
+    setHistoryLoadMessage("");
+    setHistoryNeedsSanitisedSave(false);
     return {
       ok: true,
       message: `Workout history restored with ${nextHistory.length} ${nextHistory.length === 1 ? "workout" : "workouts"}. Previous-set comparisons were rebuilt.`,
@@ -409,26 +563,43 @@ export default function Home() {
   }
 
   function clearWorkoutData(): SettingsActionResult {
-    if (workoutStartedAt !== null) {
-      return { ok: false, message: "Finish or cancel the active workout before clearing workout data." };
+    if (workoutStartedAt !== null || historyDraft !== null || templateDraft !== null || customExerciseDraftOpen || settingsDraftOpen) {
+      return { ok: false, message: "Finish or cancel every active draft or pending import before clearing workout data." };
     }
+    if (!workoutStorageIsSafe()) return { ok: false, message: "Lift Off could not verify current workout data. Reload before clearing anything." };
 
-    const result = removeStorageKeysWithRollback(WORKOUT_DATA_KEYS, "Clear workout data");
-    if (!result.ok) return { ok: false, message: result.message };
+    const result = removeStorageKeysWithRollback(WORKOUT_DATA_KEYS, "Clear workout data", {
+      expectedRawValues: expectedValuesFor(WORKOUT_DATA_KEYS),
+    });
+    if (!result.ok) {
+      if (result.conflict) setCrossTabConflict("Workout data changed in another tab, so nothing was cleared.");
+      return { ok: false, message: result.message };
+    }
+    recordExpectedRawValues(result.rawValues);
     setWorkoutHistory([]);
     setSavedPrevious({});
     setExpandedWorkoutIds([]);
     setCompletedMessage("");
+    setHistoryLoadStatus("missing");
+    setHistoryLoadMessage("");
+    setHistoryNeedsSanitisedSave(false);
     return { ok: true, message: "Workout history and previous-set comparisons were cleared. Settings, templates and custom exercises were preserved." };
   }
 
   function resetAllAppData(): SettingsActionResult {
-    if (workoutStartedAt !== null) {
-      return { ok: false, message: "Finish or cancel the active workout before resetting app data." };
+    if (workoutStartedAt !== null || historyDraft !== null || templateDraft !== null || customExerciseDraftOpen || settingsDraftOpen) {
+      return { ok: false, message: "Finish or cancel every active draft or pending import before resetting app data." };
     }
+    if (!storageSnapshotReadyRef.current || unsafeStorageKeysRef.current.size > 0) return { ok: false, message: "Lift Off could not verify all current device data. Reload before resetting anything." };
 
-    const result = removeStorageKeysWithRollback(ALL_LIFT_OFF_KEYS, "Reset all app data");
-    if (!result.ok) return { ok: false, message: result.message };
+    const result = removeStorageKeysWithRollback(ALL_LIFT_OFF_KEYS, "Reset all app data", {
+      expectedRawValues: expectedValuesFor(ALL_LIFT_OFF_KEYS),
+    });
+    if (!result.ok) {
+      if (result.conflict) setCrossTabConflict("Lift Off data changed in another tab, so nothing was reset.");
+      return { ok: false, message: result.message };
+    }
+    recordExpectedRawValues(result.rawValues);
 
     setWorkoutHistory([]);
     setSavedPrevious({});
@@ -440,14 +611,27 @@ export default function Home() {
     setEditingTemplateId(null);
     setTemplateError("");
     setTemplateSelectionError("");
+    setTemplateStorageMessage("");
     setCustomExerciseStorageError("");
+    setCustomExerciseDraftOpen(false);
+    setSettingsDraftOpen(false);
+    setHistoryDraft(null);
+    setPendingConfirmation(null);
     setSettingsLoadError("");
     setCompletedMessage("");
+    setHistoryLoadStatus("missing");
+    setHistoryLoadMessage("");
+    setHistoryNeedsSanitisedSave(false);
     return { ok: true, message: "All Lift Off data was reset. Source templates, built-in exercises and kilogram defaults are active." };
   }
 
   function beginWorkout(name: string, exerciseIds: string[]) {
     const trimmedName = name.trim();
+    const nameError = validateWorkoutName(name);
+    if (nameError) {
+      setTemplateSelectionError(nameError);
+      return;
+    }
     const unavailableExerciseIds = exerciseIds.filter((exerciseId) => !getExerciseById(exerciseLookup, exerciseId));
     if (unavailableExerciseIds.length > 0) {
       setTemplateSelectionError(
@@ -472,8 +656,9 @@ export default function Home() {
 
   function startEmptyWorkout() {
     const trimmedName = emptyWorkoutName.trim();
-    if (!trimmedName) {
-      setTemplateSelectionError("Enter a workout name before starting an empty workout.");
+    const nameError = validateWorkoutName(emptyWorkoutName);
+    if (nameError) {
+      setTemplateSelectionError(nameError);
       return;
     }
 
@@ -551,9 +736,10 @@ export default function Home() {
   function saveTemplateDraft() {
     if (!templateDraft) return;
     const trimmedName = templateDraft.name.trim();
+    const nameValidationError = validateTemplateName(templateDraft.name);
 
-    if (!trimmedName) {
-      setTemplateError("Enter a template name before saving.");
+    if (nameValidationError) {
+      setTemplateError(nameValidationError);
       return;
     }
     if (templateDraft.exerciseIds.length === 0) {
@@ -574,12 +760,21 @@ export default function Home() {
       ? [...workoutTemplates, savedTemplate]
       : workoutTemplates.map((template) => template.id === editingTemplateId ? savedTemplate : template);
 
+    if (!storageKeyStillExpected(WORKOUT_TEMPLATES_KEY)) {
+      const couldNotLoad = storageKeyCouldNotBeLoaded(WORKOUT_TEMPLATES_KEY);
+      if (!couldNotLoad) setCrossTabConflict("Templates changed in another tab. This local template draft has not overwritten them.");
+      setTemplateError(couldNotLoad
+        ? "Templates could not be read reliably. Reload before saving; your complete draft is still here."
+        : "Templates changed in another tab. Reload before saving; your complete draft is still here.");
+      return;
+    }
     if (!saveWorkoutTemplates(nextTemplates)) {
       setTemplateError("Lift Off could not save this template on your device. Your unsaved edits are still here.");
       return;
     }
 
     setWorkoutTemplates(nextTemplates);
+    captureExpectedKey(WORKOUT_TEMPLATES_KEY);
     setTemplateDraft(null);
     setEditingTemplateId(null);
     setTemplateError("");
@@ -590,35 +785,64 @@ export default function Home() {
     if (!templateDraft || templateDraft.kind !== "built-in") return;
     const defaultTemplate = getDefaultTemplate(templateDraft.id);
     if (!defaultTemplate) return;
-    if (!window.confirm(`Reset ${templateDraft.name} to its original exercises and name?`)) return;
-
     const nextTemplates = workoutTemplates.map((template) =>
       template.id === defaultTemplate.id ? defaultTemplate : template,
     );
+    if (!storageKeyStillExpected(WORKOUT_TEMPLATES_KEY)) {
+      const couldNotLoad = storageKeyCouldNotBeLoaded(WORKOUT_TEMPLATES_KEY);
+      if (!couldNotLoad) setCrossTabConflict("Templates changed in another tab. The built-in template was not reset.");
+      setTemplateError(couldNotLoad
+        ? "Templates could not be read reliably. Reload before resetting; your current edits are still here."
+        : "Templates changed in another tab. Reload before resetting; your current edits are still here.");
+      setPendingConfirmation(null);
+      return;
+    }
     if (!saveWorkoutTemplates(nextTemplates)) {
       setTemplateError("Lift Off could not reset this template. Your current edits are still here.");
+      setPendingConfirmation(null);
       return;
     }
 
     setWorkoutTemplates(nextTemplates);
+    captureExpectedKey(WORKOUT_TEMPLATES_KEY);
     setTemplateDraft({ ...defaultTemplate, exerciseIds: [...defaultTemplate.exerciseIds] });
     setTemplateError("");
+    setPendingConfirmation(null);
   }
 
   function deleteCustomTemplate() {
     if (!templateDraft || templateDraft.kind !== "custom" || editingTemplateId === null) return;
-    if (!window.confirm(`Delete the ${templateDraft.name || "custom"} template? This cannot be undone.`)) return;
-
     const nextTemplates = workoutTemplates.filter((template) => template.id !== editingTemplateId);
+    if (!storageKeyStillExpected(WORKOUT_TEMPLATES_KEY)) {
+      const couldNotLoad = storageKeyCouldNotBeLoaded(WORKOUT_TEMPLATES_KEY);
+      if (!couldNotLoad) setCrossTabConflict("Templates changed in another tab. This custom template was not deleted.");
+      setTemplateError(couldNotLoad
+        ? "Templates could not be read reliably. Reload before deleting; the template and draft are unchanged."
+        : "Templates changed in another tab. Reload before deleting; the template and draft are unchanged.");
+      setPendingConfirmation(null);
+      return;
+    }
     if (!saveWorkoutTemplates(nextTemplates)) {
       setTemplateError("Lift Off could not delete this template. The template and your edits are unchanged.");
+      setPendingConfirmation(null);
       return;
     }
 
     setWorkoutTemplates(nextTemplates);
+    captureExpectedKey(WORKOUT_TEMPLATES_KEY);
     setTemplateDraft(null);
     setEditingTemplateId(null);
     setTemplateError("");
+    setScreen("templates");
+    setPendingConfirmation(null);
+  }
+
+  function discardTemplateDraft() {
+    setTemplateDraft(null);
+    setEditingTemplateId(null);
+    setTemplateError("");
+    setShowTemplatePicker(false);
+    setPendingConfirmation(null);
     setScreen("templates");
   }
 
@@ -646,11 +870,6 @@ export default function Home() {
   }
 
   function cancelWorkout() {
-    if (hasMeaningfulWorkoutData()) {
-      const shouldDiscard = window.confirm("Discard this workout? Your entered exercises and sets will not be saved.");
-      if (!shouldDiscard) return;
-    }
-
     setLoggedExercises([]);
     setWorkoutName("");
     setWorkoutStartedAt(null);
@@ -658,23 +877,39 @@ export default function Home() {
     setShowWorkoutPicker(false);
     resetWorkoutExerciseFilters();
     setWorkoutError("");
+    setPendingConfirmation(null);
     setScreen("home");
   }
 
+  function requestCancelWorkout() {
+    setWorkoutError("");
+    if (hasMeaningfulWorkoutData()) setPendingConfirmation("cancel-workout");
+    else cancelWorkout();
+  }
+
   function finishWorkout() {
-    const completedSets = loggedExercises.flatMap((exercise) => exercise.sets.filter(isValidCompletedSet));
+    setWorkoutError("");
+    if (!workoutStorageIsSafe()) {
+      setWorkoutError("Lift Off could not verify current device data. Your workout is still open; reload only after preserving the values you need.");
+      return;
+    }
+    const workoutNameError = validateWorkoutName(workoutName);
+    if (workoutNameError) {
+      setWorkoutError(workoutNameError);
+      return;
+    }
+    const setResults = loggedExercises.flatMap((exercise) =>
+      exercise.sets.map((set) => validateEditableSet(set, appSettings.weightUnit)),
+    );
+    const completedSets = setResults.filter((result) => result.canonicalSet?.complete);
 
     if (completedSets.length === 0) {
       setWorkoutError("Complete at least one set with a valid weight and more than zero repetitions before finishing.");
       return;
     }
 
-    const hasInvalidCompletedSet = loggedExercises.some((exercise) =>
-      exercise.sets.some((set) => set.complete && !isValidCompletedSet(set)),
-    );
-
-    if (hasInvalidCompletedSet) {
-      setWorkoutError("One or more completed sets has invalid input. Use a non-negative weight, repetitions above zero and an optional numeric RPE.");
+    if (setResults.some((result) => result.canonicalSet === null)) {
+      setWorkoutError("Correct every nonblank set value before finishing. Weight must be non-negative, repetitions above zero and RPE blank or between 1 and 10.");
       return;
     }
 
@@ -705,23 +940,23 @@ export default function Home() {
       (first, second) => Date.parse(second.startedAt) - Date.parse(first.startedAt),
     );
 
-    const newPrevious: PreviousSetsByExercise = { ...savedPrevious };
-    savedExercises.forEach((exercise) => {
-      const completed: PreviousSet[] = exercise.sets.filter(isValidCompletedSavedSet).map((set) => ({
-        weight: set.weight!,
-        reps: set.reps!,
-      }));
-      if (completed.length > 0) newPrevious[exercise.exerciseId] = completed;
-    });
+    const newPrevious = rebuildPreviousSetsFromHistory(nextHistory);
 
-    const storageResult = writeWorkoutDataWithRollback(nextHistory, newPrevious);
+    const storageResult = writeWorkoutDataWithRollback(nextHistory, newPrevious, {
+      expectedRawValues: expectedValuesFor(WORKOUT_DATA_KEYS),
+    });
     if (!storageResult.ok) {
+      if (storageResult.conflict) setCrossTabConflict("Workout data changed in another tab. Your active workout is still open and has not overwritten it.");
       setWorkoutError(`${storageResult.message} Your workout is still open, so please try again.`);
       return;
     }
 
     setWorkoutHistory(nextHistory);
     setSavedPrevious(newPrevious);
+    recordExpectedRawValues(storageResult.rawValues);
+    setHistoryLoadStatus("loaded");
+    setHistoryLoadMessage("");
+    setHistoryNeedsSanitisedSave(false);
     setCompletedMessage(`Workout saved · ${savedExercises.length} exercises · ${formatVolumeFromKilograms(savedSummary.totalVolume, appSettings.weightUnit)}`);
     setLoggedExercises([]);
     setWorkoutName("");
@@ -735,6 +970,84 @@ export default function Home() {
     setExpandedWorkoutIds((current) =>
       current.includes(workoutId) ? current.filter((id) => id !== workoutId) : [...current, workoutId],
     );
+  }
+
+  function clearHistoryNotices() {
+    setHistoryActionMessage("");
+    setHistoryActionError("");
+  }
+
+  function openHistoryEditor(workout: SavedWorkout) {
+    clearHistoryNotices();
+    setHistoryDraft(workout);
+    setHistoryDraftUnit(appSettings.weightUnit);
+    setScreen("history-editor");
+  }
+
+  function saveHistoricalWorkout(editedWorkout: SavedWorkout) {
+    clearHistoryNotices();
+    if (!workoutStorageIsSafe()) return { ok: false as const, message: "Lift Off could not verify current workout data. Reload before saving; this draft remains open." };
+    let nextHistory: SavedWorkout[];
+    try {
+      nextHistory = replaceWorkoutInHistory(workoutHistory, editedWorkout);
+    } catch (error) {
+      return { ok: false as const, message: error instanceof Error ? error.message : "This workout could not be edited safely." };
+    }
+    const rebuiltPrevious = rebuildPreviousSetsFromHistory(nextHistory);
+    const result = writeWorkoutDataWithRollback(nextHistory, rebuiltPrevious, {
+      expectedRawValues: expectedValuesFor(WORKOUT_DATA_KEYS),
+    });
+    if (!result.ok) {
+      if (result.conflict) setCrossTabConflict("Workout data changed in another tab. Your historical draft remains open and has not overwritten it.");
+      return { ok: false as const, message: result.message };
+    }
+
+    setWorkoutHistory(nextHistory);
+    setSavedPrevious(rebuiltPrevious);
+    recordExpectedRawValues(result.rawValues);
+    setHistoryDraft(null);
+    setHistoryLoadStatus("loaded");
+    setHistoryLoadMessage("");
+    setHistoryNeedsSanitisedSave(false);
+    setHistoryActionMessage(`“${editedWorkout.name}” was updated. Dashboard, Progress and previous-set comparisons were recalculated.`);
+    setScreen("history");
+    return { ok: true as const, message: "Workout updated." };
+  }
+
+  function deleteHistoricalWorkout(workoutId: string) {
+    clearHistoryNotices();
+    if (!workoutStorageIsSafe()) {
+      const message = "Lift Off could not verify current device data. Reload before deleting anything.";
+      setHistoryActionError(message);
+      return { ok: false as const, message };
+    }
+    let nextHistory: SavedWorkout[];
+    try {
+      nextHistory = deleteWorkoutFromHistory(workoutHistory, workoutId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "This workout could not be deleted safely.";
+      setHistoryActionError(message);
+      return { ok: false as const, message };
+    }
+    const rebuiltPrevious = rebuildPreviousSetsFromHistory(nextHistory);
+    const result = writeWorkoutDataWithRollback(nextHistory, rebuiltPrevious, {
+      expectedRawValues: expectedValuesFor(WORKOUT_DATA_KEYS),
+    });
+    if (!result.ok) {
+      if (result.conflict) setCrossTabConflict("Workout data changed in another tab. The selected workout was not deleted.");
+      setHistoryActionError(result.message);
+      return { ok: false as const, message: result.message };
+    }
+
+    setWorkoutHistory(nextHistory);
+    setSavedPrevious(rebuiltPrevious);
+    recordExpectedRawValues(result.rawValues);
+    setExpandedWorkoutIds((current) => current.filter((id) => id !== workoutId));
+    setHistoryLoadStatus("loaded");
+    setHistoryLoadMessage("");
+    setHistoryNeedsSanitisedSave(false);
+    setHistoryActionMessage("Workout deleted. Dashboard, Progress and previous-set comparisons were recalculated.");
+    return { ok: true as const, message: "Workout deleted." };
   }
 
   if (screen === "welcome") {
@@ -761,6 +1074,7 @@ export default function Home() {
   if (screen === "templates") {
     return (
       <main className="app-shell">
+        {renderCrossTabConflict()}
         <div className="phone-layout template-layout">
           <header className="history-header">
             <button className="text-button history-back-button" onClick={() => setScreen("home")}>
@@ -776,6 +1090,7 @@ export default function Home() {
           </section>
 
           {templateSelectionError && <p className="template-error template-selection-error" role="alert">{templateSelectionError}</p>}
+          {templateStorageMessage && <p className="template-error template-selection-error" role="alert">{templateStorageMessage}</p>}
 
           <section className="template-section" aria-labelledby="saved-templates-title">
             <div className="template-section-heading template-management-heading">
@@ -833,6 +1148,7 @@ export default function Home() {
               <span>Workout name</span>
               <input
                 value={emptyWorkoutName}
+                maxLength={101}
                 onChange={(event) => {
                   setEmptyWorkoutName(event.target.value);
                   setTemplateSelectionError("");
@@ -849,14 +1165,18 @@ export default function Home() {
 
   if (screen === "exercise-manager") {
     return (
-      <ExerciseManager
-        exercises={exerciseLibrary}
-        customExercises={customExercises}
-        workoutTemplates={workoutTemplates}
-        storageError={customExerciseStorageError}
-        onCommit={commitCustomExercises}
-        onBack={() => setScreen("templates")}
-      />
+      <>
+        {renderCrossTabConflict()}
+        <ExerciseManager
+          exercises={exerciseLibrary}
+          customExercises={customExercises}
+          workoutTemplates={workoutTemplates}
+          storageError={customExerciseStorageError}
+          onCommit={commitCustomExercises}
+          onBack={() => setScreen("templates")}
+          onDraftStateChange={setCustomExerciseDraftOpen}
+        />
+      </>
     );
   }
 
@@ -865,17 +1185,12 @@ export default function Home() {
 
     return (
       <main className="app-shell">
+        {renderCrossTabConflict()}
         <div className="phone-layout template-layout">
           <header className="history-header">
             <button
               className="text-button history-back-button"
-              onClick={() => {
-                setTemplateDraft(null);
-                setEditingTemplateId(null);
-                setTemplateError("");
-                setShowTemplatePicker(false);
-                setScreen("templates");
-              }}
+              onClick={() => setPendingConfirmation("discard-template")}
             >
               <span aria-hidden="true">←</span> Templates
             </button>
@@ -891,7 +1206,7 @@ export default function Home() {
           <form className="template-editor" onSubmit={(event) => { event.preventDefault(); saveTemplateDraft(); }}>
             <label className="template-name-field">
               <span>Template name</span>
-              <input value={templateDraft.name} onChange={(event) => updateTemplateName(event.target.value)} placeholder="e.g. Push day" />
+              <input value={templateDraft.name} maxLength={101} onChange={(event) => updateTemplateName(event.target.value)} placeholder="e.g. Push day" />
             </label>
 
             <section className="template-exercises-editor" aria-labelledby="template-exercises-title">
@@ -944,20 +1259,15 @@ export default function Home() {
               <button
                 className="template-edit-button"
                 type="button"
-                onClick={() => {
-                  setTemplateDraft(null);
-                  setEditingTemplateId(null);
-                  setTemplateError("");
-                  setScreen("templates");
-                }}
+                onClick={() => setPendingConfirmation("discard-template")}
               >Cancel</button>
             </div>
 
             {templateDraft.kind === "built-in" && (
-              <button className="template-destructive-button" type="button" onClick={resetBuiltInTemplate}>Reset to default</button>
+              <button className="template-destructive-button" type="button" onClick={() => { setTemplateError(""); setPendingConfirmation("reset-template"); }}>Reset to default</button>
             )}
             {isExistingCustomTemplate && (
-              <button className="template-destructive-button" type="button" onClick={deleteCustomTemplate}>Delete template</button>
+              <button className="template-destructive-button" type="button" onClick={() => { setTemplateError(""); setPendingConfirmation("delete-template"); }}>Delete template</button>
             )}
           </form>
         </div>
@@ -981,111 +1291,75 @@ export default function Home() {
             }}
           />
         )}
+        <ConfirmDialog
+          open={pendingConfirmation === "discard-template"}
+          title="Discard template draft?"
+          description="Your unsaved template name, exercises and order will be discarded. The saved template will remain unchanged."
+          confirmLabel="Discard draft"
+          destructive
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={discardTemplateDraft}
+        />
+        <ConfirmDialog
+          open={pendingConfirmation === "reset-template"}
+          title="Reset built-in template?"
+          description={`Restore ${templateDraft.name || "this template"} to its original source name and exercise order? Your local template edits will be replaced.`}
+          confirmLabel="Reset to default"
+          destructive
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={resetBuiltInTemplate}
+        />
+        <ConfirmDialog
+          open={pendingConfirmation === "delete-template"}
+          title="Delete custom template?"
+          description={`Delete ${templateDraft.name || "this custom template"}? This cannot be undone.`}
+          confirmLabel="Delete template"
+          destructive
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={deleteCustomTemplate}
+        />
       </main>
+    );
+  }
+
+  if (screen === "history-editor" && historyDraft) {
+    return (
+      <>
+        {renderCrossTabConflict()}
+        <HistoricalWorkoutEditor
+          key={historyDraft.id}
+          workout={historyDraft}
+          weightUnit={historyDraftUnit}
+          recoveredHistoryWillBeSaved={historyNeedsSanitisedSave}
+          onSave={saveHistoricalWorkout}
+          onCancel={() => { setHistoryDraft(null); setScreen("history"); }}
+        />
+      </>
     );
   }
 
   if (screen === "history") {
     return (
-      <main className="app-shell">
-        <div className="phone-layout history-layout">
-          <header className="history-header">
-            <button className="text-button history-back-button" onClick={() => setScreen("home")}>
-              <span aria-hidden="true">←</span> Home
-            </button>
-            <div className="brand-lockup compact"><RocketMark /><span>LIFT OFF</span></div>
-          </header>
-
-          <section className="history-intro" aria-labelledby="history-title">
-            <p className="eyebrow">Training log</p>
-            <h1 id="history-title">Workout history</h1>
-            <p>Every completed session saved on this device, newest first.</p>
-          </section>
-
-          {workoutHistory.length === 0 ? (
-            <section className="history-empty">
-              <div className="empty-icon" aria-hidden="true">◷</div>
-              <h2>No workouts saved yet</h2>
-              <p>Finish at least one valid completed set and your workout will appear here.</p>
-              <button className="primary-button" onClick={() => setScreen("home")}>Return home</button>
-            </section>
-          ) : (
-            <ol className="history-list" aria-label="Saved workouts">
-              {workoutHistory.map((workout) => {
-                const expanded = expandedWorkoutIds.includes(workout.id);
-                const detailsId = `workout-details-${workout.id}`;
-
-                return (
-                  <li key={workout.id}>
-                    <article className="history-card">
-                      <button
-                        className="history-summary"
-                        aria-expanded={expanded}
-                        aria-controls={detailsId}
-                        onClick={() => toggleWorkoutExpanded(workout.id)}
-                      >
-                        <span className="history-summary-heading">
-                          <span>
-                            <strong>{workout.name}</strong>
-                            <small>{formatHistoryDate(workout.startedAt)}</small>
-                          </span>
-                          <span className={expanded ? "history-chevron expanded" : "history-chevron"} aria-hidden="true">⌄</span>
-                        </span>
-                        <span className="history-metrics">
-                          <span><strong>{formatTime(workout.durationSeconds)}</strong><small>Duration</small></span>
-                          <span><strong>{workout.exerciseCount}</strong><small>Exercises</small></span>
-                          <span><strong>{workout.completedSetCount}</strong><small>Completed sets</small></span>
-                          <span><strong>{formatVolumeFromKilograms(workout.totalVolume, appSettings.weightUnit)}</strong><small>Volume</small></span>
-                        </span>
-                      </button>
-
-                      {expanded && (
-                        <div className="history-details" id={detailsId}>
-                          {workout.exercises.map((exercise, exerciseIndex) => (
-                            <section className="history-exercise" key={`${exercise.exerciseId}-${exerciseIndex}`}>
-                              <header>
-                                <span className="muscle-label">{exercise.muscle}</span>
-                                <h2>{exercise.name}</h2>
-                                <p>{exercise.equipment}</p>
-                              </header>
-                              <div className="history-set-table-wrap">
-                                <table className="history-set-table">
-                                  <caption className="sr-only">Sets for {exercise.name}</caption>
-                                  <thead>
-                                    <tr><th>Set</th><th>{appSettings.weightUnit}</th><th>Reps</th><th>RPE</th><th>Status</th></tr>
-                                  </thead>
-                                  <tbody>
-                                    {exercise.sets.map((set, setIndex) => (
-                                      <tr className={set.complete ? "history-set-complete" : "history-set-incomplete"} key={setIndex}>
-                                        <td>{setIndex + 1}</td>
-                                        <td>{set.weight === null ? "—" : formatDisplayNumber(kilogramsToDisplayWeight(set.weight, appSettings.weightUnit))}</td>
-                                        <td>{formatSavedNumber(set.reps)}</td>
-                                        <td>{formatSavedNumber(set.rpe)}</td>
-                                        <td><span className="set-status">{set.complete ? "Completed" : "Incomplete"}</span></td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </section>
-                          ))}
-                        </div>
-                      )}
-                    </article>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-
-          <nav className="bottom-nav" aria-label="Main navigation">
-            <button onClick={() => setScreen("home")}><span>⌂</span>Home</button>
-            <button className="nav-active" aria-current="page"><span>◷</span>History</button>
-            <button onClick={() => setScreen("progress")}><span>⌁</span>Progress</button>
-            <button onClick={() => setScreen("settings")}><span>⚙</span>Settings</button>
-          </nav>
-        </div>
-      </main>
+      <>
+        {renderCrossTabConflict()}
+        <HistoryScreen
+          history={workoutHistory}
+          weightUnit={appSettings.weightUnit}
+          expandedWorkoutIds={expandedWorkoutIds}
+          loadStatus={historyLoadStatus}
+          loadMessage={historyLoadMessage}
+          actionMessage={historyActionMessage}
+          actionError={historyActionError}
+          recoveredHistoryWillBeSaved={historyNeedsSanitisedSave}
+          onToggleExpanded={toggleWorkoutExpanded}
+          onEdit={openHistoryEditor}
+          onDelete={deleteHistoricalWorkout}
+          onClearNotices={clearHistoryNotices}
+          onNavigateHome={() => setScreen("home")}
+          onNavigateProgress={() => setScreen("progress")}
+          onNavigateSettings={() => setScreen("settings")}
+        />
+      </>
     );
   }
 
@@ -1095,6 +1369,7 @@ export default function Home() {
         workoutHistory={workoutHistory}
         exerciseLibrary={exerciseLibrary}
         weightUnit={appSettings.weightUnit}
+        storageWarning={historyLoadStatus === "unavailable" || historyLoadStatus === "recovery-failed" ? historyLoadMessage : ""}
         onNavigateHome={() => setScreen("home")}
         onNavigateHistory={() => setScreen("history")}
         onNavigateSettings={() => setScreen("settings")}
@@ -1104,28 +1379,34 @@ export default function Home() {
 
   if (screen === "settings") {
     return (
-      <SettingsScreen
-        settings={appSettings}
-        workoutHistory={workoutHistory}
-        settingsLoadError={settingsLoadError}
-        hasActiveWorkout={workoutStartedAt !== null}
-        onSaveSettings={commitAppSettings}
-        onApplyWorkoutHistory={applyImportedWorkoutHistory}
-        onClearWorkoutData={clearWorkoutData}
-        onResetAllData={resetAllAppData}
-        onNavigateHome={() => setScreen("home")}
-        onNavigateHistory={() => setScreen("history")}
-        onNavigateProgress={() => setScreen("progress")}
-      />
+      <>
+        {renderCrossTabConflict()}
+        <SettingsScreen
+          settings={appSettings}
+          workoutHistory={workoutHistory}
+          settingsLoadError={settingsLoadError}
+          historyRecoveryWarning={historyNeedsSanitisedSave ? historyLoadMessage : ""}
+          hasActiveWorkout={workoutStartedAt !== null || historyDraft !== null || templateDraft !== null || customExerciseDraftOpen}
+          onSaveSettings={commitAppSettings}
+          onApplyWorkoutHistory={applyImportedWorkoutHistory}
+          onClearWorkoutData={clearWorkoutData}
+          onResetAllData={resetAllAppData}
+          onNavigateHome={() => setScreen("home")}
+          onNavigateHistory={() => setScreen("history")}
+          onNavigateProgress={() => setScreen("progress")}
+          onDraftStateChange={setSettingsDraftOpen}
+        />
+      </>
     );
   }
 
   if (screen === "workout") {
     return (
       <main className="app-shell">
+        {renderCrossTabConflict()}
         <div className="phone-layout workout-layout">
           <header className="workout-header">
-            <button className="text-button" onClick={cancelWorkout}>Cancel</button>
+            <button className="text-button" onClick={requestCancelWorkout}>Cancel</button>
             <div className="live-pill"><span /> Live workout</div>
             <button className="finish-button" onClick={finishWorkout}>Finish</button>
           </header>
@@ -1140,6 +1421,9 @@ export default function Home() {
           </section>
 
           {workoutError && <div className="workout-alert" role="alert">{workoutError}</div>}
+          {historyNeedsSanitisedSave && (
+            <div className="workout-alert warning" role="status">History was recovered with ignored records. Successfully saving this workout will write only the visible recovered History and permanently discard those ignored records.</div>
+          )}
 
           {loggedExercises.length === 0 ? (
             <section className="empty-workout-card">
@@ -1202,6 +1486,8 @@ export default function Home() {
                           />
                           <button
                             className={set.complete ? "set-check complete" : "set-check"}
+                            type="button"
+                            aria-pressed={set.complete}
                             aria-label={set.complete ? "Mark set incomplete" : "Mark set complete"}
                             onClick={() => updateSet(exercise.sessionId, index, "complete", !set.complete)}
                           >✓</button>
@@ -1252,6 +1538,15 @@ export default function Home() {
             }}
           />
         )}
+        <ConfirmDialog
+          open={pendingConfirmation === "cancel-workout"}
+          title="Discard active workout?"
+          description="Your entered exercises and sets will not be saved. Existing workout History will not change."
+          confirmLabel="Discard workout"
+          destructive
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={cancelWorkout}
+        />
       </main>
     );
   }
@@ -1270,7 +1565,10 @@ export default function Home() {
           <p>Make today&apos;s numbers count.</p>
         </section>
 
-        {completedMessage && <div className="saved-banner"><span>✓</span>{completedMessage}</div>}
+        {completedMessage && <div className="saved-banner" role="status"><span>✓</span>{completedMessage}</div>}
+        {(historyLoadStatus === "unavailable" || historyLoadStatus === "recovery-failed") && (
+          <p className="history-notice error" role="alert">Dashboard values may be incomplete because saved workout data could not be read reliably. {historyLoadMessage}</p>
+        )}
 
         <button className="start-card" onClick={openTemplateSelection}>
           <span className="start-icon" aria-hidden="true">▶</span>

@@ -18,6 +18,7 @@ type ProgressScreenProps = {
   workoutHistory: SavedWorkout[];
   exerciseLibrary: readonly Exercise[];
   weightUnit: WeightUnit;
+  storageWarning?: string;
   onNavigateHome: () => void;
   onNavigateHistory: () => void;
   onNavigateSettings: () => void;
@@ -136,6 +137,7 @@ export default function ProgressScreen({
   exerciseLibrary,
   workoutHistory,
   weightUnit,
+  storageWarning,
   onNavigateHome,
   onNavigateHistory,
   onNavigateSettings,
@@ -174,6 +176,8 @@ export default function ProgressScreen({
           <h1 id="progress-title">Progress</h1>
           <p>Factual performance calculated from your valid completed sets.</p>
         </section>
+
+        {storageWarning && <p className="history-notice error" role="alert">{storageWarning}</p>}
 
         {choices.length === 0 ? (
           <section className="progress-empty">

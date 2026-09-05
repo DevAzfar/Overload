@@ -8,6 +8,7 @@ import {
   type Exercise,
   type MuscleGroup,
 } from "./exercises";
+import { getBrowserStorage, type StorageLike, type StorageLoadStatus } from "./storageTypes";
 
 export const CUSTOM_EXERCISES_KEY = "lift-off-custom-exercises-v1";
 
@@ -25,6 +26,8 @@ export type CustomExerciseDraft = {
 export type CustomExerciseLoadResult = {
   exercises: CustomExercise[];
   error: string;
+  status: StorageLoadStatus;
+  rawValue: string | null;
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -59,43 +62,47 @@ function toValidCustomExercise(value: unknown): CustomExercise | null {
   };
 }
 
-function safelyRemoveCustomExercises(): boolean {
+function safelyRemoveCustomExercises(storage: StorageLike): boolean {
   try {
-    window.localStorage.removeItem(CUSTOM_EXERCISES_KEY);
+    storage.removeItem(CUSTOM_EXERCISES_KEY);
     return true;
   } catch {
     return false;
   }
 }
 
-function invalidStoreResult(): CustomExerciseLoadResult {
-  const cleared = safelyRemoveCustomExercises();
+function invalidStoreResult(rawValue: string, storage: StorageLike): CustomExerciseLoadResult {
+  const cleared = safelyRemoveCustomExercises(storage);
   return {
     exercises: [],
     error: cleared
       ? "Invalid custom-exercise data was removed. Built-in exercises and other Lift Off data were not changed."
       : "Custom-exercise data is invalid and could not be cleared because device storage is unavailable.",
+    status: cleared ? "corrupt" : "recovery-failed",
+    rawValue,
   };
 }
 
-export function loadCustomExercises(): CustomExerciseLoadResult {
+export function loadCustomExercises(storage: StorageLike = getBrowserStorage()): CustomExerciseLoadResult {
   let rawExercises: string | null;
 
   try {
-    rawExercises = window.localStorage.getItem(CUSTOM_EXERCISES_KEY);
+    rawExercises = storage.getItem(CUSTOM_EXERCISES_KEY);
   } catch {
     return {
       exercises: [],
       error: "Lift Off could not access custom exercises on this device. Built-in exercises are still available.",
+      status: "unavailable",
+      rawValue: null,
     };
   }
 
-  if (rawExercises === null) return { exercises: [], error: "" };
+  if (rawExercises === null) return { exercises: [], error: "", status: "missing", rawValue: null };
 
   try {
     const parsed: unknown = JSON.parse(rawExercises);
     if (!isObject(parsed) || parsed.version !== 1 || !Array.isArray(parsed.exercises)) {
-      return invalidStoreResult();
+      return invalidStoreResult(rawExercises, storage);
     }
 
     const seenIds = new Set<string>();
@@ -114,9 +121,15 @@ export function loadCustomExercises(): CustomExerciseLoadResult {
       exercises.push(exercise);
     });
 
-    return { exercises, error: "" };
+    const ignoredCount = parsed.exercises.length - exercises.length;
+    return {
+      exercises,
+      error: ignoredCount > 0 ? `${ignoredCount} invalid or duplicate custom ${ignoredCount === 1 ? "exercise was" : "exercises were"} ignored while valid exercises were preserved.` : "",
+      status: ignoredCount > 0 ? "recovered" : "loaded",
+      rawValue: rawExercises,
+    };
   } catch {
-    return invalidStoreResult();
+    return invalidStoreResult(rawExercises, storage);
   }
 }
 
@@ -134,7 +147,7 @@ function customExercisesAreValid(exercises: readonly CustomExercise[]): boolean 
   return new Set(identities).size === identities.length;
 }
 
-export function saveCustomExercises(exercises: readonly CustomExercise[]): boolean {
+export function saveCustomExercises(exercises: readonly CustomExercise[], storage: StorageLike = getBrowserStorage()): boolean {
   if (!customExercisesAreValid(exercises)) return false;
 
   const store: CustomExerciseStoreV1 = {
@@ -143,7 +156,7 @@ export function saveCustomExercises(exercises: readonly CustomExercise[]): boole
   };
 
   try {
-    window.localStorage.setItem(CUSTOM_EXERCISES_KEY, JSON.stringify(store));
+    storage.setItem(CUSTOM_EXERCISES_KEY, JSON.stringify(store));
     return true;
   } catch {
     return false;

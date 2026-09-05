@@ -1,4 +1,5 @@
 import type { WeightUnit } from "./weightUnits";
+import { getBrowserStorage, type StorageLike, type StorageLoadStatus } from "./storageTypes";
 
 export const APP_SETTINGS_KEY = "lift-off-settings-v1";
 export const DISPLAY_NAME_MAX_LENGTH = 40;
@@ -16,6 +17,8 @@ type AppSettingsStoreV1 = {
 export type AppSettingsLoadResult = {
   settings: AppSettings;
   error: string;
+  status: StorageLoadStatus;
+  rawValue: string | null;
 };
 
 export const DEFAULT_APP_SETTINGS: Readonly<AppSettings> = Object.freeze({
@@ -42,27 +45,29 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function safelyRemoveSettings(): boolean {
+function safelyRemoveSettings(storage: StorageLike): boolean {
   try {
-    window.localStorage.removeItem(APP_SETTINGS_KEY);
+    storage.removeItem(APP_SETTINGS_KEY);
     return true;
   } catch {
     return false;
   }
 }
 
-export function loadAppSettings(): AppSettingsLoadResult {
+export function loadAppSettings(storage: StorageLike = getBrowserStorage()): AppSettingsLoadResult {
   let rawSettings: string | null;
   try {
-    rawSettings = window.localStorage.getItem(APP_SETTINGS_KEY);
+    rawSettings = storage.getItem(APP_SETTINGS_KEY);
   } catch {
     return {
       settings: getDefaultAppSettings(),
       error: "Lift Off could not access settings on this device. Default settings are in use.",
+      status: "unavailable",
+      rawValue: null,
     };
   }
 
-  if (rawSettings === null) return { settings: getDefaultAppSettings(), error: "" };
+  if (rawSettings === null) return { settings: getDefaultAppSettings(), error: "", status: "missing", rawValue: null };
 
   try {
     const parsed: unknown = JSON.parse(rawSettings);
@@ -77,25 +82,27 @@ export function loadAppSettings(): AppSettingsLoadResult {
       weightUnit: parsed.settings.weightUnit,
     });
     if (!settings) throw new Error("Invalid settings values");
-    return { settings, error: "" };
+    return { settings, error: "", status: "loaded", rawValue: rawSettings };
   } catch {
-    const cleared = safelyRemoveSettings();
+    const cleared = safelyRemoveSettings(storage);
     return {
       settings: getDefaultAppSettings(),
       error: cleared
         ? "Invalid settings were removed and defaults restored. Other Lift Off data was not changed."
         : "Settings are invalid and could not be cleared because device storage is unavailable.",
+      status: cleared ? "corrupt" : "recovery-failed",
+      rawValue: rawSettings,
     };
   }
 }
 
-export function saveAppSettings(settings: AppSettings): boolean {
+export function saveAppSettings(settings: AppSettings, storage: StorageLike = getBrowserStorage()): boolean {
   const normalised = normaliseAppSettings(settings);
   if (!normalised) return false;
 
   const store: AppSettingsStoreV1 = { version: 1, settings: normalised };
   try {
-    window.localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(store));
+    storage.setItem(APP_SETTINGS_KEY, JSON.stringify(store));
     return true;
   } catch {
     return false;

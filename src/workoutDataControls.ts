@@ -9,6 +9,7 @@ import {
   type SavedWorkout,
 } from "./workoutHistory";
 import { WORKOUT_TEMPLATES_KEY } from "./workoutTemplates";
+import { getBrowserStorage, type StorageLike } from "./storageTypes";
 
 export const WORKOUT_DATA_KEYS = Object.freeze([WORKOUT_HISTORY_KEY, PREVIOUS_SETS_KEY] as const);
 export const ALL_LIFT_OFF_KEYS = Object.freeze([
@@ -20,26 +21,42 @@ export const ALL_LIFT_OFF_KEYS = Object.freeze([
 ] as const);
 
 export type StorageMutationResult =
-  | { ok: true }
-  | { ok: false; message: string; rollbackFailed: boolean };
+  | { ok: true; rawValues: ReadonlyMap<string, string | null> }
+  | { ok: false; message: string; rollbackFailed: boolean; conflict?: boolean };
 
 type StorageSnapshot = Map<string, string | null>;
 
-function readSnapshot(keys: readonly string[]): StorageSnapshot {
-  return new Map(keys.map((key) => [key, window.localStorage.getItem(key)]));
+export type StorageMutationOptions = {
+  storage?: StorageLike;
+  expectedRawValues?: ReadonlyMap<string, string | null>;
+};
+
+export function readStorageSnapshot(
+  keys: readonly string[],
+  storage: StorageLike = getBrowserStorage(),
+): StorageSnapshot {
+  return new Map(keys.map((key) => [key, storage.getItem(key)]));
 }
 
-function restoreSnapshot(snapshot: StorageSnapshot): boolean {
+function restoreSnapshot(snapshot: StorageSnapshot, storage: StorageLike): boolean {
   let restored = true;
   snapshot.forEach((value, key) => {
     try {
-      if (value === null) window.localStorage.removeItem(key);
-      else window.localStorage.setItem(key, value);
+      if (value === null) storage.removeItem(key);
+      else storage.setItem(key, value);
     } catch {
       restored = false;
     }
   });
   return restored;
+}
+
+function snapshotMatchesExpected(
+  current: StorageSnapshot,
+  expected: ReadonlyMap<string, string | null> | undefined,
+): boolean {
+  if (!expected) return true;
+  return [...current.entries()].every(([key, value]) => expected.get(key) === value);
 }
 
 function failureMessage(action: string, rollbackFailed: boolean): StorageMutationResult {
@@ -80,10 +97,12 @@ export function rebuildPreviousSetsFromHistory(history: readonly SavedWorkout[])
 export function writeWorkoutDataWithRollback(
   history: readonly SavedWorkout[],
   previousSets: PreviousSetsByExercise,
+  options: StorageMutationOptions = {},
 ): StorageMutationResult {
+  const storage = options.storage ?? getBrowserStorage();
   let snapshot: StorageSnapshot;
   try {
-    snapshot = readSnapshot(WORKOUT_DATA_KEYS);
+    snapshot = readStorageSnapshot(WORKOUT_DATA_KEYS, storage);
   } catch {
     return {
       ok: false,
@@ -91,23 +110,41 @@ export function writeWorkoutDataWithRollback(
       message: "Lift Off could not read the current workout data, so no workout changes were attempted.",
     };
   }
+  if (!snapshotMatchesExpected(snapshot, options.expectedRawValues)) {
+    return {
+      ok: false,
+      rollbackFailed: false,
+      conflict: true,
+      message: "Workout data changed in another browser tab. Review or reload those changes before saving this version.",
+    };
+  }
 
+  const nextPreviousRaw = JSON.stringify(previousSets);
+  const nextHistoryRaw = JSON.stringify(history);
   try {
-    window.localStorage.setItem(PREVIOUS_SETS_KEY, JSON.stringify(previousSets));
-    window.localStorage.setItem(WORKOUT_HISTORY_KEY, JSON.stringify(history));
-    return { ok: true };
+    storage.setItem(PREVIOUS_SETS_KEY, nextPreviousRaw);
+    storage.setItem(WORKOUT_HISTORY_KEY, nextHistoryRaw);
+    return {
+      ok: true,
+      rawValues: new Map([
+        [PREVIOUS_SETS_KEY, nextPreviousRaw],
+        [WORKOUT_HISTORY_KEY, nextHistoryRaw],
+      ]),
+    };
   } catch {
-    return failureMessage("The workout-data write", !restoreSnapshot(snapshot));
+    return failureMessage("The workout-data write", !restoreSnapshot(snapshot, storage));
   }
 }
 
 export function removeStorageKeysWithRollback(
   keys: readonly string[],
   actionDescription: string,
+  options: StorageMutationOptions = {},
 ): StorageMutationResult {
+  const storage = options.storage ?? getBrowserStorage();
   let snapshot: StorageSnapshot;
   try {
-    snapshot = readSnapshot(keys);
+    snapshot = readStorageSnapshot(keys, storage);
   } catch {
     return {
       ok: false,
@@ -115,11 +152,19 @@ export function removeStorageKeysWithRollback(
       message: `Lift Off could not read the current device data, so ${actionDescription.toLocaleLowerCase("en-GB")} was not attempted.`,
     };
   }
+  if (!snapshotMatchesExpected(snapshot, options.expectedRawValues)) {
+    return {
+      ok: false,
+      rollbackFailed: false,
+      conflict: true,
+      message: "Device data changed in another browser tab. Reload or deliberately keep your local state before deleting data.",
+    };
+  }
 
   try {
-    keys.forEach((key) => window.localStorage.removeItem(key));
-    return { ok: true };
+    keys.forEach((key) => storage.removeItem(key));
+    return { ok: true, rawValues: new Map(keys.map((key) => [key, null])) };
   } catch {
-    return failureMessage(actionDescription, !restoreSnapshot(snapshot));
+    return failureMessage(actionDescription, !restoreSnapshot(snapshot, storage));
   }
 }

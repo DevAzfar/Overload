@@ -1,3 +1,5 @@
+import { getBrowserStorage, type StorageLike, type StorageLoadStatus } from "./storageTypes";
+
 export const WORKOUT_TEMPLATES_KEY = "lift-off-workout-templates-v1";
 
 export type WorkoutTemplateKind = "built-in" | "custom";
@@ -12,6 +14,13 @@ export type WorkoutTemplate = {
 type WorkoutTemplateStoreV1 = {
   version: 1;
   templates: WorkoutTemplate[];
+};
+
+export type WorkoutTemplateLoadResult = {
+  templates: WorkoutTemplate[];
+  status: StorageLoadStatus;
+  message: string;
+  rawValue: string | null;
 };
 
 type BuiltInTemplateDefinition = {
@@ -78,36 +87,46 @@ function toValidTemplate(value: unknown): WorkoutTemplate | null {
   };
 }
 
-function safelyRemoveTemplates() {
+function safelyRemoveTemplates(storage: StorageLike) {
   try {
-    window.localStorage.removeItem(WORKOUT_TEMPLATES_KEY);
+    storage.removeItem(WORKOUT_TEMPLATES_KEY);
+    return true;
   } catch {
-    // The defaults remain available in memory when browser storage is restricted.
+    return false;
   }
 }
 
-export function loadWorkoutTemplates(): WorkoutTemplate[] {
+export function loadWorkoutTemplatesResult(storage: StorageLike = getBrowserStorage()): WorkoutTemplateLoadResult {
   let rawTemplates: string | null;
 
   try {
-    rawTemplates = window.localStorage.getItem(WORKOUT_TEMPLATES_KEY);
+    rawTemplates = storage.getItem(WORKOUT_TEMPLATES_KEY);
   } catch {
-    return getDefaultTemplates();
+    return { templates: getDefaultTemplates(), status: "unavailable", message: "Lift Off could not read saved templates. Source defaults are in use, but saved edits and custom templates may still exist on this device.", rawValue: null };
   }
 
-  if (rawTemplates === null) return getDefaultTemplates();
+  if (rawTemplates === null) return { templates: getDefaultTemplates(), status: "missing", message: "", rawValue: null };
 
   try {
     const parsed: unknown = JSON.parse(rawTemplates);
     if (!isObject(parsed) || parsed.version !== 1 || !Array.isArray(parsed.templates)) {
-      safelyRemoveTemplates();
-      return getDefaultTemplates();
+      const removed = safelyRemoveTemplates(storage);
+      return {
+        templates: getDefaultTemplates(),
+        status: removed ? "corrupt" : "recovery-failed",
+        message: removed
+          ? "Invalid template data was removed and source defaults restored."
+          : "Template data is invalid and could not be removed because device storage is unavailable.",
+        rawValue: rawTemplates,
+      };
     }
 
     const validById = new Map<string, WorkoutTemplate>();
+    let ignoredCount = 0;
     parsed.templates.forEach((candidate) => {
       const template = toValidTemplate(candidate);
       if (template && !validById.has(template.id)) validById.set(template.id, template);
+      else ignoredCount += 1;
     });
 
     const builtIns = BUILT_IN_TEMPLATE_DEFINITIONS.map((defaultTemplate) => {
@@ -115,12 +134,31 @@ export function loadWorkoutTemplates(): WorkoutTemplate[] {
       return savedTemplate?.kind === "built-in" ? cloneTemplate(savedTemplate) : cloneTemplate(defaultTemplate);
     });
     const customTemplates = [...validById.values()].filter((template) => template.kind === "custom");
-
-    return [...builtIns, ...customTemplates];
+    const missingBuiltInCount = BUILT_IN_TEMPLATE_DEFINITIONS.filter((template) => !validById.has(template.id)).length;
+    const recoveredCount = ignoredCount + missingBuiltInCount;
+    return {
+      templates: [...builtIns, ...customTemplates],
+      status: recoveredCount > 0 ? "recovered" : "loaded",
+      message: recoveredCount > 0
+        ? `${ignoredCount} invalid or duplicate saved ${ignoredCount === 1 ? "template was" : "templates were"} ignored, and ${missingBuiltInCount} missing built-in ${missingBuiltInCount === 1 ? "template was" : "templates were"} restored from source. Storage was not rewritten.`
+        : "",
+      rawValue: rawTemplates,
+    };
   } catch {
-    safelyRemoveTemplates();
-    return getDefaultTemplates();
+    const removed = safelyRemoveTemplates(storage);
+    return {
+      templates: getDefaultTemplates(),
+      status: removed ? "corrupt" : "recovery-failed",
+      message: removed
+        ? "Corrupt template JSON was removed and source defaults restored."
+        : "Template JSON is corrupt and could not be removed because device storage is unavailable.",
+      rawValue: rawTemplates,
+    };
   }
+}
+
+export function loadWorkoutTemplates(): WorkoutTemplate[] {
+  return loadWorkoutTemplatesResult().templates;
 }
 
 function templatesAreValidForSave(templates: WorkoutTemplate[]): boolean {
@@ -133,12 +171,12 @@ function templatesAreValidForSave(templates: WorkoutTemplate[]): boolean {
   );
 }
 
-export function saveWorkoutTemplates(templates: WorkoutTemplate[]): boolean {
+export function saveWorkoutTemplates(templates: WorkoutTemplate[], storage: StorageLike = getBrowserStorage()): boolean {
   if (!templatesAreValidForSave(templates)) return false;
 
   const store: WorkoutTemplateStoreV1 = { version: 1, templates };
   try {
-    window.localStorage.setItem(WORKOUT_TEMPLATES_KEY, JSON.stringify(store));
+    storage.setItem(WORKOUT_TEMPLATES_KEY, JSON.stringify(store));
     return true;
   } catch {
     return false;
