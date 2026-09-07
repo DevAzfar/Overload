@@ -102,7 +102,7 @@ export function loadWorkoutTemplatesResult(storage: StorageLike = getBrowserStor
   try {
     rawTemplates = storage.getItem(WORKOUT_TEMPLATES_KEY);
   } catch {
-    return { templates: getDefaultTemplates(), status: "unavailable", message: "Lift Off could not read saved templates. Source defaults are in use, but saved edits and custom templates may still exist on this device.", rawValue: null };
+    return { templates: getDefaultTemplates(), status: "unavailable", message: "Overload could not read saved templates. Source defaults are in use, but saved edits and custom templates may still exist on this device.", rawValue: null };
   }
 
   if (rawTemplates === null) return { templates: getDefaultTemplates(), status: "missing", message: "", rawValue: null };

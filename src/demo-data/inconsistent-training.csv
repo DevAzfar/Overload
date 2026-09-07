@@ -1,0 +1,211 @@
+﻿schema_version,workout_id,workout_name,started_at,finished_at,duration_seconds,exercise_index,exercise_id,exercise_name,muscle,equipment,set_index,weight_kg,reps,rpe,complete
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,0,55,5,8,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,1,50,8,,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,2,47.5,10,9,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,0,45,9,8,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,1,42.5,11,,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,2,40,12,9,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,0,30,7,8.5,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,1,27.5,9,,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,2,25,11,9,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,0,15,10,,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,1,14,12,8.5,true
+1,demo-inconsistent-01,Upper strength,2025-08-04T19:00:00.000Z,2025-08-04T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,2,13,13,9,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,0,squat,Back Squat,Quadriceps,Barbell,0,71.1,6,8,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,0,squat,Back Squat,Quadriceps,Barbell,1,66.1,7,,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,0,squat,Back Squat,Quadriceps,Barbell,2,61.099999999999994,9,9,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,66.2,8,8,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,66.2,9,,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,63.5,11,9,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,2,leg-press,Leg Press,Quadriceps,Machine,0,122.5,10,,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,2,leg-press,Leg Press,Quadriceps,Machine,1,122.5,8,8.5,true
+1,demo-inconsistent-02,Lower strength,2025-08-07T17:15:00.000Z,2025-08-07T18:08:00.000Z,3180,2,leg-press,Leg Press,Quadriceps,Machine,2,112.5,13,9,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,0,bench,Barbell Bench Press,Chest,Barbell,0,56.4,7,8,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,0,bench,Barbell Bench Press,Chest,Barbell,1,51.4,8,,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,0,bench,Barbell Bench Press,Chest,Barbell,2,48.9,10,9,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,1,squat,Back Squat,Quadriceps,Barbell,0,77.1,6,8,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,1,squat,Back Squat,Quadriceps,Barbell,1,69.5,8,,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,1,squat,Back Squat,Quadriceps,Barbell,2,64.5,10,9,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,2,cable-row,Seated Cable Row,Back,Cable,0,52.5,10,8,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,2,cable-row,Seated Cable Row,Back,Cable,1,50,12,,true
+1,demo-inconsistent-03,Quick full body,2025-08-13T12:35:00.000Z,2025-08-13T13:18:00.000Z,2580,2,cable-row,Seated Cable Row,Back,Cable,2,47.5,13,9,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,0,54.45,8,8,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,1,49.45,8,,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,2,46.95,10,9,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,0,46.15,9,8,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,1,44.9,11,,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,2,42.4,12,9,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,0,30.51666666666667,7,8.5,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,1,28.85,9,,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,2,26.35,11,9,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,0,18,10,,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,1,17,12,8.5,true
+1,demo-inconsistent-04,Upper strength,2025-08-22T19:20:00.000Z,2025-08-22T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,2,16,13,9,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,0,squat,Back Squat,Quadriceps,Barbell,0,84.4,6,8,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,0,squat,Back Squat,Quadriceps,Barbell,1,79.4,7,,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,0,squat,Back Squat,Quadriceps,Barbell,2,74.4,9,9,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,79.8,8,8,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,69.8,9,,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,66.5,11,9,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,2,leg-press,Leg Press,Quadriceps,Machine,0,130,10,,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,2,leg-press,Leg Press,Quadriceps,Machine,1,130,8,8.5,true
+1,demo-inconsistent-05,Lower strength,2025-08-24T18:05:00.000Z,2025-08-24T19:14:30.000Z,4170,2,leg-press,Leg Press,Quadriceps,Machine,2,120,13,9,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,0,bench,Barbell Bench Press,Chest,Barbell,0,48.5,7,8,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,0,bench,Barbell Bench Press,Chest,Barbell,1,53.5,8,,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,0,bench,Barbell Bench Press,Chest,Barbell,2,51,10,9,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,1,squat,Back Squat,Quadriceps,Barbell,0,70.25,6,8,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,1,squat,Back Squat,Quadriceps,Barbell,1,72.5,8,,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,1,squat,Back Squat,Quadriceps,Barbell,2,67.5,10,9,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,2,cable-row,Seated Cable Row,Back,Cable,0,47.5,10,8,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,2,cable-row,Seated Cable Row,Back,Cable,1,45,12,,true
+1,demo-inconsistent-06,Quick full body,2025-09-04T12:35:00.000Z,2025-09-04T13:14:00.000Z,2340,2,cable-row,Seated Cable Row,Back,Cable,2,42.5,13,9,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,0,58.9,7,8,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,1,53.9,8,,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,2,51.4,10,9,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,0,49.8,9,8,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,1,47.3,11,,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,2,44.8,12,9,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,0,32.7,7,8.5,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,1,30.2,9,,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,2,27.7,11,9,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,0,16,10,,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,1,15,12,8.5,true
+1,demo-inconsistent-07,Upper strength,2025-09-10T19:00:00.000Z,2025-09-10T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,2,14,13,9,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,0,squat,Back Squat,Quadriceps,Barbell,0,77.7,6,8,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,0,squat,Back Squat,Quadriceps,Barbell,1,72.7,7,,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,0,squat,Back Squat,Quadriceps,Barbell,2,67.7,9,9,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,73.4,8,8,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,73.4,9,,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,69.5,11,9,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,2,leg-press,Leg Press,Quadriceps,Machine,0,137.5,10,,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,2,leg-press,Leg Press,Quadriceps,Machine,1,137.5,8,8.5,true
+1,demo-inconsistent-08,Lower strength,2025-09-11T17:35:00.000Z,2025-09-11T18:33:30.000Z,3510,2,leg-press,Leg Press,Quadriceps,Machine,2,127.5,13,9,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,0,bench,Barbell Bench Press,Chest,Barbell,0,60.6,7,8,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,0,bench,Barbell Bench Press,Chest,Barbell,1,55.6,8,,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,0,bench,Barbell Bench Press,Chest,Barbell,2,53.1,10,9,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,1,squat,Back Squat,Quadriceps,Barbell,0,83.4,6,8,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,1,squat,Back Squat,Quadriceps,Barbell,1,75.5,8,,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,1,squat,Back Squat,Quadriceps,Barbell,2,70.5,10,9,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,2,cable-row,Seated Cable Row,Back,Cable,0,55,10,8,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,2,cable-row,Seated Cable Row,Back,Cable,1,52.5,12,,true
+1,demo-inconsistent-09,Quick full body,2025-09-24T12:35:00.000Z,2025-09-24T13:10:00.000Z,2100,2,cable-row,Seated Cable Row,Back,Cable,2,50,13,9,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,0,58.35,6,8,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,1,53.35,8,,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,2,50.85,10,9,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,0,50.95,9,8,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,1,49.7,11,,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,2,,,,false
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,0,33.21666666666666,7,8.5,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,1,31.55,9,,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,2,29.05,11,9,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,0,19,10,,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,1,18,12,8.5,true
+1,demo-inconsistent-10,Upper strength,2025-10-01T19:20:00.000Z,2025-10-01T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,2,17,13,9,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,0,squat,Back Squat,Quadriceps,Barbell,0,91,6,8,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,0,squat,Back Squat,Quadriceps,Barbell,1,86,7,,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,0,squat,Back Squat,Quadriceps,Barbell,2,81,,,false
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,87,8,8,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,77,9,,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,72.5,11,9,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,2,leg-press,Leg Press,Quadriceps,Machine,0,145,10,,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,2,leg-press,Leg Press,Quadriceps,Machine,1,145,8,8.5,true
+1,demo-inconsistent-11,Lower strength,2025-10-08T18:25:00.000Z,2025-10-08T19:12:30.000Z,2850,2,leg-press,Leg Press,Quadriceps,Machine,2,135,13,9,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,0,bench,Barbell Bench Press,Chest,Barbell,0,52.7,7,8,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,0,bench,Barbell Bench Press,Chest,Barbell,1,57.7,8,,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,0,bench,Barbell Bench Press,Chest,Barbell,2,55.2,10,9,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,1,squat,Back Squat,Quadriceps,Barbell,0,76.55,6,8,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,1,squat,Back Squat,Quadriceps,Barbell,1,78.5,8,,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,1,squat,Back Squat,Quadriceps,Barbell,2,73.5,10,9,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,2,cable-row,Seated Cable Row,Back,Cable,0,50,10,8,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,2,cable-row,Seated Cable Row,Back,Cable,1,47.5,12,,true
+1,demo-inconsistent-12,Quick full body,2025-10-10T12:35:00.000Z,2025-10-10T13:22:00.000Z,2820,2,cable-row,Seated Cable Row,Back,Cable,2,45,13,9,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,0,62.8,5,8,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,1,57.8,8,,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,2,55.3,10,9,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,0,54.6,9,8,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,1,52.1,11,,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,2,49.6,12,9,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,0,35.4,7,8.5,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,1,32.9,9,,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,2,30.4,11,9,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,0,17,10,,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,1,16,12,8.5,true
+1,demo-inconsistent-13,Upper strength,2025-10-17T19:00:00.000Z,2025-10-17T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,2,15,13,9,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,0,84.3,6,8,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,1,79.3,7,,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,2,74.3,9,9,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,80.6,8,8,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,80.6,9,,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,75.5,11,9,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,2,leg-press,Leg Press,Quadriceps,Machine,0,152.5,10,,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,2,leg-press,Leg Press,Quadriceps,Machine,1,152.5,8,8.5,true
+1,demo-inconsistent-14,Lower strength,2025-10-25T17:15:00.000Z,2025-10-25T18:19:00.000Z,3840,2,leg-press,Leg Press,Quadriceps,Machine,2,142.5,13,9,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,0,bench,Barbell Bench Press,Chest,Barbell,0,64.8,7,8,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,0,bench,Barbell Bench Press,Chest,Barbell,1,59.8,8,,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,0,bench,Barbell Bench Press,Chest,Barbell,2,,,,false
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,1,squat,Back Squat,Quadriceps,Barbell,0,89.7,6,8,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,1,squat,Back Squat,Quadriceps,Barbell,1,81.5,8,,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,1,squat,Back Squat,Quadriceps,Barbell,2,76.5,10,9,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,2,cable-row,Seated Cable Row,Back,Cable,0,57.5,10,8,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,2,cable-row,Seated Cable Row,Back,Cable,1,55,12,,true
+1,demo-inconsistent-15,Quick full body,2025-10-26T12:35:00.000Z,2025-10-26T13:18:00.000Z,2580,2,cable-row,Seated Cable Row,Back,Cable,2,52.5,13,9,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,0,62.25,8,8,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,1,57.25,8,,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,0,bench,Barbell Bench Press,Chest,Barbell,2,54.75,10,9,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,0,55.75,9,8,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,1,54.5,11,,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,1,lat-pulldown,Lat Pulldown,Back,Cable,2,52,12,9,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,0,35.916666666666664,7,8.5,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,1,34.25,9,,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,2,ohp,Overhead Press,Shoulders,Barbell,2,31.75,11,9,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,0,15,10,,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,1,14,12,8.5,true
+1,demo-inconsistent-16,Upper strength,2025-10-28T19:20:00.000Z,2025-10-28T20:20:00.000Z,3600,3,curl,Cable Curl,Biceps,Cable,2,13,13,9,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,0,squat,Back Squat,Quadriceps,Barbell,0,97.6,6,8,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,0,squat,Back Squat,Quadriceps,Barbell,1,92.6,7,,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,0,squat,Back Squat,Quadriceps,Barbell,2,87.6,9,9,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,94.2,8,8,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,84.2,9,,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,78.5,11,9,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,2,leg-press,Leg Press,Quadriceps,Machine,0,160,10,,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,2,leg-press,Leg Press,Quadriceps,Machine,1,160,8,8.5,true
+1,demo-inconsistent-17,Lower strength,2025-11-02T18:05:00.000Z,2025-11-02T18:58:00.000Z,3180,2,leg-press,Leg Press,Quadriceps,Machine,2,150,13,9,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,0,bench,Barbell Bench Press,Chest,Barbell,0,56.900000000000006,7,8,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,0,bench,Barbell Bench Press,Chest,Barbell,1,61.9,8,,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,0,bench,Barbell Bench Press,Chest,Barbell,2,59.4,10,9,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,1,squat,Back Squat,Quadriceps,Barbell,0,82.85,6,8,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,1,squat,Back Squat,Quadriceps,Barbell,1,84.5,8,,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,1,squat,Back Squat,Quadriceps,Barbell,2,79.5,10,9,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,2,cable-row,Seated Cable Row,Back,Cable,0,52.5,10,8,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,2,cable-row,Seated Cable Row,Back,Cable,1,50,12,,true
+1,demo-inconsistent-18,Quick full body,2025-11-04T12:35:00.000Z,2025-11-04T13:14:00.000Z,2340,2,cable-row,Seated Cable Row,Back,Cable,2,47.5,13,9,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,0,66.7,7,8,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,1,61.7,8,,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,0,bench,Barbell Bench Press,Chest,Barbell,2,59.2,10,9,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,0,59.4,9,8,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,1,56.9,11,,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,1,lat-pulldown,Lat Pulldown,Back,Cable,2,54.4,12,9,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,0,38.1,7,8.5,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,1,35.6,9,,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,2,ohp,Overhead Press,Shoulders,Barbell,2,33.1,11,9,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,0,18,10,,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,1,17,12,8.5,true
+1,demo-inconsistent-19,Upper strength,2025-11-06T19:00:00.000Z,2025-11-06T19:45:00.000Z,2700,3,curl,Cable Curl,Biceps,Cable,2,16,13,9,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,0,squat,Back Squat,Quadriceps,Barbell,0,90.9,6,8,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,0,squat,Back Squat,Quadriceps,Barbell,1,85.9,7,,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,0,squat,Back Squat,Quadriceps,Barbell,2,80.9,9,9,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,87.8,8,8,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,87.8,9,,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,81.5,11,9,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,2,leg-press,Leg Press,Quadriceps,Machine,0,167.5,10,,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,2,leg-press,Leg Press,Quadriceps,Machine,1,167.5,8,8.5,true
+1,demo-inconsistent-20,Lower strength,2025-11-08T17:35:00.000Z,2025-11-08T18:44:30.000Z,4170,2,leg-press,Leg Press,Quadriceps,Machine,2,157.5,13,9,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,0,bench,Barbell Bench Press,Chest,Barbell,0,69,7,8,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,0,bench,Barbell Bench Press,Chest,Barbell,1,64,8,,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,0,bench,Barbell Bench Press,Chest,Barbell,2,61.5,10,9,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,1,squat,Back Squat,Quadriceps,Barbell,0,96,6,8,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,1,squat,Back Squat,Quadriceps,Barbell,1,87.5,8,,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,1,squat,Back Squat,Quadriceps,Barbell,2,82.5,10,9,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,2,cable-row,Seated Cable Row,Back,Cable,0,47.5,10,8,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,2,cable-row,Seated Cable Row,Back,Cable,1,45,12,,true
+1,demo-inconsistent-21,Quick full body,2025-11-10T12:35:00.000Z,2025-11-10T13:10:00.000Z,2100,2,cable-row,Seated Cable Row,Back,Cable,2,42.5,13,9,true

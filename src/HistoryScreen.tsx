@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BrandLogo from "./BrandLogo";
 import ConfirmDialog from "./ConfirmDialog";
 import type { ActionResult, StorageLoadStatus } from "./storageTypes";
 import type { SavedWorkout } from "./workoutHistory";
@@ -92,7 +93,7 @@ export default function HistoryScreen({
           <button className="text-button history-back-button" onClick={onNavigateHome}>
             <span aria-hidden="true">←</span> Home
           </button>
-          <span className="progress-header-mark">LIFT OFF</span>
+          <span className="progress-header-mark"><BrandLogo size="compact" /><span>OVERLOAD</span></span>
         </header>
 
         <section className="history-intro" aria-labelledby="history-title">

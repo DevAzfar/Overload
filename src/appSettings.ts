@@ -61,7 +61,7 @@ export function loadAppSettings(storage: StorageLike = getBrowserStorage()): App
   } catch {
     return {
       settings: getDefaultAppSettings(),
-      error: "Lift Off could not access settings on this device. Default settings are in use.",
+      error: "Overload could not access settings on this device. Default settings are in use.",
       status: "unavailable",
       rawValue: null,
     };
@@ -88,7 +88,7 @@ export function loadAppSettings(storage: StorageLike = getBrowserStorage()): App
     return {
       settings: getDefaultAppSettings(),
       error: cleared
-        ? "Invalid settings were removed and defaults restored. Other Lift Off data was not changed."
+        ? "Invalid settings were removed and defaults restored. Other Overload data was not changed."
         : "Settings are invalid and could not be cleared because device storage is unavailable.",
       status: cleared ? "corrupt" : "recovery-failed",
       rawValue: rawSettings,

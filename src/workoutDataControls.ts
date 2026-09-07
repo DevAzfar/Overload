@@ -9,15 +9,22 @@ import {
   type SavedWorkout,
 } from "./workoutHistory";
 import { WORKOUT_TEMPLATES_KEY } from "./workoutTemplates";
+import { DEMO_METADATA_KEY } from "./demoMetadata";
 import { getBrowserStorage, type StorageLike } from "./storageTypes";
 
 export const WORKOUT_DATA_KEYS = Object.freeze([WORKOUT_HISTORY_KEY, PREVIOUS_SETS_KEY] as const);
-export const ALL_LIFT_OFF_KEYS = Object.freeze([
+export const WORKOUT_AND_DEMO_DATA_KEYS = Object.freeze([
+  WORKOUT_HISTORY_KEY,
+  PREVIOUS_SETS_KEY,
+  DEMO_METADATA_KEY,
+] as const);
+export const ALL_APP_STORAGE_KEYS = Object.freeze([
   WORKOUT_HISTORY_KEY,
   PREVIOUS_SETS_KEY,
   WORKOUT_TEMPLATES_KEY,
   CUSTOM_EXERCISES_KEY,
   APP_SETTINGS_KEY,
+  DEMO_METADATA_KEY,
 ] as const);
 
 export type StorageMutationResult =
@@ -29,6 +36,7 @@ type StorageSnapshot = Map<string, string | null>;
 export type StorageMutationOptions = {
   storage?: StorageLike;
   expectedRawValues?: ReadonlyMap<string, string | null>;
+  additionalChanges?: ReadonlyMap<string, string | null>;
 };
 
 export function readStorageSnapshot(
@@ -64,7 +72,7 @@ function failureMessage(action: string, rollbackFailed: boolean): StorageMutatio
     ok: false,
     rollbackFailed,
     message: rollbackFailed
-      ? `${action} did not complete, and Lift Off could not fully restore the earlier device data. Reload the app and review your data before trying again.`
+      ? `${action} did not complete, and Overload could not fully restore the earlier device data. Reload the app and review your data before trying again.`
       : `${action} did not complete. The earlier device data was restored and the app state was not changed.`,
   };
 }
@@ -100,14 +108,19 @@ export function writeWorkoutDataWithRollback(
   options: StorageMutationOptions = {},
 ): StorageMutationResult {
   const storage = options.storage ?? getBrowserStorage();
+  const changes = new Map<string, string | null>([
+    [PREVIOUS_SETS_KEY, JSON.stringify(previousSets)],
+    [WORKOUT_HISTORY_KEY, JSON.stringify(history)],
+  ]);
+  options.additionalChanges?.forEach((value, key) => changes.set(key, value));
   let snapshot: StorageSnapshot;
   try {
-    snapshot = readStorageSnapshot(WORKOUT_DATA_KEYS, storage);
+    snapshot = readStorageSnapshot([...changes.keys()], storage);
   } catch {
     return {
       ok: false,
       rollbackFailed: false,
-      message: "Lift Off could not read the current workout data, so no workout changes were attempted.",
+      message: "Overload could not read the current workout data, so no workout changes were attempted.",
     };
   }
   if (!snapshotMatchesExpected(snapshot, options.expectedRawValues)) {
@@ -119,18 +132,12 @@ export function writeWorkoutDataWithRollback(
     };
   }
 
-  const nextPreviousRaw = JSON.stringify(previousSets);
-  const nextHistoryRaw = JSON.stringify(history);
   try {
-    storage.setItem(PREVIOUS_SETS_KEY, nextPreviousRaw);
-    storage.setItem(WORKOUT_HISTORY_KEY, nextHistoryRaw);
-    return {
-      ok: true,
-      rawValues: new Map([
-        [PREVIOUS_SETS_KEY, nextPreviousRaw],
-        [WORKOUT_HISTORY_KEY, nextHistoryRaw],
-      ]),
-    };
+    changes.forEach((value, key) => {
+      if (value === null) storage.removeItem(key);
+      else storage.setItem(key, value);
+    });
+    return { ok: true, rawValues: changes };
   } catch {
     return failureMessage("The workout-data write", !restoreSnapshot(snapshot, storage));
   }
@@ -149,7 +156,7 @@ export function removeStorageKeysWithRollback(
     return {
       ok: false,
       rollbackFailed: false,
-      message: `Lift Off could not read the current device data, so ${actionDescription.toLocaleLowerCase("en-GB")} was not attempted.`,
+      message: `Overload could not read the current device data, so ${actionDescription.toLocaleLowerCase("en-GB")} was not attempted.`,
     };
   }
   if (!snapshotMatchesExpected(snapshot, options.expectedRawValues)) {

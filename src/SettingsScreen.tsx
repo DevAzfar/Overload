@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import BrandLogo from "./BrandLogo";
 import ConfirmDialog from "./ConfirmDialog";
 import {
   DISPLAY_NAME_MAX_LENGTH,
@@ -131,7 +132,7 @@ export default function SettingsScreen({
       anchor.remove();
       URL.revokeObjectURL(url);
       setSettingsError("");
-      setSettingsMessage(`Exported ${workoutHistory.length} ${workoutHistory.length === 1 ? "workout" : "workouts"} in canonical kilograms.`);
+      setSettingsMessage(`CSV download requested for ${workoutHistory.length} ${workoutHistory.length === 1 ? "workout" : "workouts"} in canonical kilograms. Confirm the file exists before relying on it as a backup.`);
     } catch (error) {
       setSettingsMessage("");
       setSettingsError(error instanceof Error ? error.message : "Workout history could not be exported.");
@@ -176,7 +177,7 @@ export default function SettingsScreen({
       }
       setImportData(result.data);
     } catch {
-      setImportError("Lift Off could not read the selected CSV file.");
+      setImportError("Overload could not read the selected CSV file.");
     }
   }
 
@@ -247,13 +248,13 @@ export default function SettingsScreen({
       <div className="phone-layout settings-layout">
         <header className="progress-header">
           <button className="text-button history-back-button" onClick={() => requestNavigation("home")}><span aria-hidden="true">←</span> Home</button>
-          <span className="progress-header-mark">LIFT OFF</span>
+          <span className="progress-header-mark"><BrandLogo size="compact" /><span>OVERLOAD</span></span>
         </header>
 
         <section className="settings-intro" aria-labelledby="settings-title">
           <p className="eyebrow">Device preferences</p>
           <h1 id="settings-title" ref={headingRef} tabIndex={-1}>Settings</h1>
-          <p>Personalise Lift Off and control the workout data stored on this device.</p>
+          <p>Personalise Overload and control the workout data stored on this device.</p>
         </section>
 
         {settingsLoadError && <p className="settings-alert" role="alert">{settingsLoadError}</p>}
@@ -303,7 +304,7 @@ export default function SettingsScreen({
           <div className="settings-section-heading"><p className="eyebrow">Workout history only</p><h2 id="import-settings-title">Import or restore CSV</h2></div>
           <p className="settings-copy">Imports canonical kilogram workout data. It does not restore templates, custom exercises or settings.</p>
           <label className="settings-file-field">
-            <span>Choose Lift Off CSV</span>
+            <span>Choose Overload CSV</span>
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" disabled={hasActiveWorkout} onChange={(event) => { void selectImportFile(event.target.files?.[0]); }} />
           </label>
           {importError && <p className="settings-alert compact" role="alert">{importError}</p>}
@@ -343,11 +344,11 @@ export default function SettingsScreen({
         <section className="settings-panel danger-panel" aria-labelledby="delete-settings-title">
           <div className="settings-section-heading"><p className="eyebrow">Data deletion</p><h2 id="delete-settings-title">Clear device data</h2></div>
           <div className="danger-action">
-            <div><h3>Clear workout data</h3><p>Deletes History and previous-set comparisons. Preserves settings, templates and custom exercises.</p></div>
+            <div><h3>Clear workout data</h3><p>Deletes History, previous-set comparisons and demo metadata. Preserves settings, templates and custom exercises.</p></div>
             <button type="button" disabled={destructiveDataActionsBlocked} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("clear"); }}>Clear workout data</button>
           </div>
           <div className="danger-action">
-            <div><h3>Reset all app data</h3><p>Deletes every Lift Off-owned localStorage record and restores source defaults. Unrelated website data is preserved.</p></div>
+            <div><h3>Reset all app data</h3><p>Deletes every Overload-owned localStorage record and restores source defaults. Unrelated website data is preserved.</p></div>
             <button type="button" disabled={destructiveDataActionsBlocked} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("reset"); }}>Reset all app data</button>
           </div>
         </section>
@@ -371,7 +372,7 @@ export default function SettingsScreen({
       <ConfirmDialog
         open={confirmation === "clear"}
         title="Clear workout data?"
-        description="This deletes workout History and previous-set comparisons. Settings, templates and custom exercises will be preserved."
+        description="This deletes workout History, previous-set comparisons and demo metadata. Settings, templates and custom exercises will be preserved."
         confirmLabel="Clear workout data"
         destructive
         onCancel={() => setConfirmation(null)}
@@ -379,8 +380,8 @@ export default function SettingsScreen({
       />
       <ConfirmDialog
         open={confirmation === "reset"}
-        title="Reset all Lift Off data?"
-        description="This deletes every Lift Off-owned workout, previous-set, template, custom-exercise and settings record. Unrelated website storage is not touched."
+        title="Reset all Overload data?"
+        description="This deletes every Overload-owned workout, previous-set, template, custom-exercise and settings record. Unrelated website storage is not touched."
         confirmLabel="Reset all app data"
         destructive
         onCancel={() => setConfirmation(null)}

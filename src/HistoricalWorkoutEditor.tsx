@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import BrandLogo from "./BrandLogo";
 import ConfirmDialog from "./ConfirmDialog";
 import { cloneSavedWorkout, withRecalculatedWorkoutSummary } from "./historyMutations";
 import type { ActionResult } from "./storageTypes";
@@ -219,7 +220,7 @@ export default function HistoricalWorkoutEditor({
       <div className="phone-layout history-editor-layout">
         <header className="history-header">
           <button className="text-button history-back-button" type="button" onClick={requestCancel}>← History</button>
-          <span className="progress-header-mark">LIFT OFF</span>
+          <span className="progress-header-mark"><BrandLogo size="compact" /><span>OVERLOAD</span></span>
         </header>
 
         <section className="history-intro compact-intro" aria-labelledby="history-editor-title">

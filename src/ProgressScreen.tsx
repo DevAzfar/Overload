@@ -1,13 +1,21 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import BrandLogo from "./BrandLogo";
+import ConfirmDialog from "./ConfirmDialog";
+import { DEMO_PROFILES, getDemoProfile, type DemoChartMetric } from "./demoProfiles";
+import type { DemoMetadata, DemoProfileId } from "./demoMetadata";
 import {
   buildExerciseChoices,
   calculateExerciseProgress,
+  createEstimatedOneRepMaxSeries,
+  type ExerciseSessionProgress,
   type ExerciseMetricBest,
   type PersonalRecordAchievement,
   type VolumeTrendPoint,
 } from "./progressAnalytics";
 import type { Exercise } from "./exercises";
 import type { SavedWorkout } from "./workoutHistory";
+import { createWorkoutCsvFilename, serializeWorkoutHistoryToCsv } from "./workoutCsv";
+import type { ActionResult } from "./storageTypes";
 import {
   formatVolumeFromKilograms,
   formatWeightFromKilograms,
@@ -19,6 +27,10 @@ type ProgressScreenProps = {
   exerciseLibrary: readonly Exercise[];
   weightUnit: WeightUnit;
   storageWarning?: string;
+  activeDemo: DemoMetadata | null;
+  demoStorageWarning?: string;
+  onActivateDemo: (profileId: DemoProfileId) => ActionResult;
+  onExitDemo: () => ActionResult;
   onNavigateHome: () => void;
   onNavigateHistory: () => void;
   onNavigateSettings: () => void;
@@ -76,39 +88,79 @@ function MetricCard({ label, value, detail, highlighted = false }: MetricCardPro
   );
 }
 
-function VolumeTrendChart({ series, weightUnit }: { series: VolumeTrendPoint[]; weightUnit: WeightUnit }) {
+function ProgressTrendChart({
+  sessions,
+  series,
+  metric,
+  weightUnit,
+  onMetricChange,
+}: {
+  sessions: ExerciseSessionProgress[];
+  series: VolumeTrendPoint[];
+  metric: DemoChartMetric;
+  weightUnit: WeightUnit;
+  onMetricChange: (metric: DemoChartMetric) => void;
+}) {
   const titleId = useId();
   const descriptionId = useId();
   const width = 100;
   const height = 48;
   const padding = 5;
-  const values = series.map((point) => point.volume);
+  const estimateSeries = createEstimatedOneRepMaxSeries(sessions);
+  const points = metric === "volume"
+    ? series.map((point) => ({ ...point, value: point.volume }))
+    : estimateSeries.map((point) => ({ ...point, value: point.estimatedOneRepMax }));
+  const values = points.map((point) => point.value);
+  const formatValue = (value: number) => metric === "volume"
+    ? formatVolumeFromKilograms(value, weightUnit)
+    : formatEstimatedOneRepMax(value, weightUnit);
+  const metricLabel = metric === "volume" ? "Volume" : "Estimated 1RM";
+  const metricExplanation = metric === "volume"
+    ? "Exercise volume for each session, shown oldest to newest."
+    : "Best Epley estimated 1RM from eligible 1–30 repetition sets in each session.";
+
+  if (points.length === 0) {
+    return (
+      <section className="progress-panel" aria-labelledby={titleId}>
+        <div className="progress-section-heading">
+          <div><p className="eyebrow">Training trend</p><h2 id={titleId}>{metricLabel}</h2></div>
+          <MetricSelector value={metric} onChange={onMetricChange} />
+        </div>
+        <p className="progress-section-copy">{metricExplanation}</p>
+        <p className="progress-inline-empty">Estimated 1RM is unavailable because this exercise has no eligible completed sets between 1 and 30 repetitions.</p>
+      </section>
+    );
+  }
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
   const range = maximum - minimum;
-  const coordinates = series.map((point, index) => {
-    const x = series.length === 1 ? width / 2 : padding + (index / (series.length - 1)) * (width - padding * 2);
-    const y = range === 0 ? height / 2 : padding + ((maximum - point.volume) / range) * (height - padding * 2);
+  const coordinates = points.map((point, index) => {
+    const x = points.length === 1 ? width / 2 : padding + (index / (points.length - 1)) * (width - padding * 2);
+    const y = range === 0 ? height / 2 : padding + ((maximum - point.value) / range) * (height - padding * 2);
     return {
       ...point,
       x: Number.isFinite(x) ? x : width / 2,
       y: Number.isFinite(y) ? y : height / 2,
     };
   });
-  const accessibleValues = series
-    .map((point) => `${formatShortDate(point.startedAt)}: ${formatVolumeFromKilograms(point.volume, weightUnit)}`)
+  const accessibleValues = points
+    .map((point) => `${formatShortDate(point.startedAt)}: ${formatValue(point.value)}`)
     .join("; ");
 
   return (
     <section className="progress-panel" aria-labelledby={titleId}>
-      <div className="progress-section-heading">
-        <div><p className="eyebrow">Completed-set volume</p><h2 id={titleId}>Volume trend</h2></div>
-        <span>{series.length} {series.length === 1 ? "session" : "sessions"}</span>
+        <div className="progress-section-heading trend-heading">
+          <div><p className="eyebrow">Training trend</p><h2 id={titleId}>{metricLabel}</h2></div>
+          <MetricSelector value={metric} onChange={onMetricChange} />
       </div>
-      <p className="progress-section-copy">Exercise volume for each session, shown oldest to newest.</p>
+      <p className="progress-section-copy">{metricExplanation} {points.length} {points.length === 1 ? "session" : "sessions"}.</p>
+      <dl className="trend-range-summary" aria-label={`${metricLabel} recorded range`}>
+        <div><dt>Low</dt><dd>{formatValue(minimum)}</dd></div>
+        <div><dt>High</dt><dd>{formatValue(maximum)}</dd></div>
+      </dl>
       <div className="volume-chart-shell">
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby={`${titleId} ${descriptionId}`}>
-          <desc id={descriptionId}>Recorded session volumes: {accessibleValues}.</desc>
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby={titleId} aria-describedby={descriptionId}>
+          <desc id={descriptionId}>{metricLabel} by session, oldest to newest: {accessibleValues}.</desc>
           <line className="volume-chart-guide" x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} />
           {coordinates.length > 1 && (
             <polyline
@@ -119,17 +171,26 @@ function VolumeTrendChart({ series, weightUnit }: { series: VolumeTrendPoint[]; 
           )}
           {coordinates.map((point) => (
             <circle className="volume-chart-point" key={`${point.workoutId}-${point.startedAt}`} cx={point.x} cy={point.y} r="2.2">
-              <title>{formatShortDate(point.startedAt)} · {formatVolumeFromKilograms(point.volume, weightUnit)}</title>
+              <title>{formatShortDate(point.startedAt)} · {formatValue(point.value)}</title>
             </circle>
           ))}
         </svg>
         <div className="volume-chart-labels" aria-hidden="true">
-          <span>{formatShortDate(series[0].startedAt)}<strong>{formatVolumeFromKilograms(series[0].volume, weightUnit)}</strong></span>
-          {series.length > 1 && <span>{formatShortDate(series[series.length - 1].startedAt)}<strong>{formatVolumeFromKilograms(series[series.length - 1].volume, weightUnit)}</strong></span>}
+          <span>{formatShortDate(points[0].startedAt)}<strong>{formatValue(points[0].value)}</strong></span>
+          {points.length > 1 && <span>{formatShortDate(points[points.length - 1].startedAt)}<strong>{formatValue(points[points.length - 1].value)}</strong></span>}
         </div>
       </div>
-      <p className="sr-only">{accessibleValues}</p>
+      <p className="sr-only">Horizontal axis: session date from oldest to newest. Vertical axis: {metricLabel}. Recorded values: {accessibleValues}</p>
     </section>
+  );
+}
+
+function MetricSelector({ value, onChange }: { value: DemoChartMetric; onChange: (metric: DemoChartMetric) => void }) {
+  return (
+    <div className="metric-selector" role="group" aria-label="Progress chart metric">
+      <button type="button" aria-pressed={value === "volume"} onClick={() => onChange("volume")}>Volume</button>
+      <button type="button" aria-pressed={value === "estimated-one-rep-max"} onClick={() => onChange("estimated-one-rep-max")}>Estimated 1RM</button>
+    </div>
   );
 }
 
@@ -138,6 +199,10 @@ export default function ProgressScreen({
   workoutHistory,
   weightUnit,
   storageWarning,
+  activeDemo,
+  demoStorageWarning,
+  onActivateDemo,
+  onExitDemo,
   onNavigateHome,
   onNavigateHistory,
   onNavigateSettings,
@@ -147,7 +212,12 @@ export default function ProgressScreen({
     [exerciseLibrary, workoutHistory],
   );
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
+  const [chartMetric, setChartMetric] = useState<DemoChartMetric>("volume");
   const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
+  const [pendingDemoAction, setPendingDemoAction] = useState<{ type: "activate"; profileId: DemoProfileId } | { type: "exit" } | null>(null);
+  const [demoMessage, setDemoMessage] = useState("");
+  const [demoError, setDemoError] = useState("");
+  const activeDemoProfile = activeDemo ? getDemoProfile(activeDemo.profileId) : null;
   const selectedStillExists = choices.some((choice) => choice.exerciseId === selectedExerciseId);
   const automaticSelection = choices.find((choice) => choice.hasValidPerformance)?.exerciseId ?? choices[0]?.exerciseId ?? "";
   const activeExerciseId = selectedStillExists ? selectedExerciseId : automaticSelection;
@@ -157,18 +227,64 @@ export default function ProgressScreen({
     [activeExerciseId, exerciseLibrary, workoutHistory],
   );
 
+  useEffect(() => {
+    if (!activeDemoProfile) return;
+    setSelectedExerciseId(activeDemoProfile.featuredExerciseId);
+    setChartMetric(activeDemoProfile.preferredMetric);
+  }, [activeDemoProfile?.id]);
+
   function toggleSession(sessionId: string) {
     setExpandedSessionIds((current) =>
       current.includes(sessionId) ? current.filter((id) => id !== sessionId) : [...current, sessionId],
     );
   }
 
+  function confirmDemoAction() {
+    if (!pendingDemoAction) return;
+    const profile = pendingDemoAction.type === "activate" ? getDemoProfile(pendingDemoAction.profileId) : null;
+    const result = pendingDemoAction.type === "activate"
+      ? onActivateDemo(pendingDemoAction.profileId)
+      : onExitDemo();
+    setPendingDemoAction(null);
+    if (!result.ok) {
+      setDemoMessage("");
+      setDemoError(result.message);
+      return;
+    }
+    if (profile) {
+      setSelectedExerciseId(profile.featuredExerciseId);
+      setChartMetric(profile.preferredMetric);
+    }
+    setDemoError("");
+    setDemoMessage(result.message);
+  }
+
+  function exportActiveDemo() {
+    try {
+      const csv = serializeWorkoutHistoryToCsv(workoutHistory);
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = createWorkoutCsvFilename();
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setDemoError("");
+      setDemoMessage("Synthetic-history CSV download requested in canonical kilograms. Confirm the file exists before relying on it as a backup.");
+    } catch (error) {
+      setDemoMessage("");
+      setDemoError(error instanceof Error ? error.message : "Demo workout history could not be exported.");
+    }
+  }
+
   return (
     <main className="app-shell">
+      {activeDemoProfile && <div className="demo-data-pill" role="status">Demo data · {activeDemoProfile.name}</div>}
       <div className="phone-layout progress-layout">
         <header className="progress-header">
           <button className="text-button history-back-button" onClick={onNavigateHome}><span aria-hidden="true">←</span> Home</button>
-          <span className="progress-header-mark">LIFT OFF</span>
+          <span className="progress-header-mark"><BrandLogo size="compact" /><span>OVERLOAD</span></span>
         </header>
 
         <section className="progress-intro" aria-labelledby="progress-title">
@@ -178,6 +294,43 @@ export default function ProgressScreen({
         </section>
 
         {storageWarning && <p className="history-notice error" role="alert">{storageWarning}</p>}
+        {demoStorageWarning && <p className="history-notice error" role="alert">{demoStorageWarning}</p>}
+        {demoError && <p className="history-notice error" role="alert">{demoError}</p>}
+        {demoMessage && <p className="settings-success" role="status">{demoMessage}</p>}
+
+        {activeDemoProfile && (
+          <section className="active-demo-banner" aria-labelledby="active-demo-title">
+            <div>
+              <p className="eyebrow">Demo data · fictional athlete</p>
+              <h2 id="active-demo-title">{activeDemoProfile.name}</h2>
+              <p>{activeDemoProfile.description}</p>
+            </div>
+            <div className="active-demo-actions">
+              <button type="button" onClick={exportActiveDemo}>Export synthetic history</button>
+              <button type="button" className="destructive-outline" onClick={() => setPendingDemoAction({ type: "exit" })}>Exit demo and clear demo workouts</button>
+            </div>
+          </section>
+        )}
+
+        <section className="demo-explorer" aria-labelledby="demo-explorer-title">
+          <div className="progress-section-heading standalone-heading">
+            <div><p className="eyebrow">Fictional training data</p><h2 id="demo-explorer-title">Explore demo athletes</h2></div>
+          </div>
+          <p className="progress-section-copy">Each profile uses the same CSV validation, History and analytics pipeline as your own workouts.</p>
+          <div className="demo-profile-grid">
+            {DEMO_PROFILES.map((profile) => (
+              <article className={activeDemo?.profileId === profile.id ? "demo-profile-card active" : "demo-profile-card"} key={profile.id}>
+                <p className="eyebrow">{activeDemo?.profileId === profile.id ? "Active demo" : "Synthetic profile"}</p>
+                <h3>{profile.name}</h3>
+                <p>{profile.description}</p>
+                <small>Featured: {profile.featuredExerciseName}</small>
+                <button type="button" onClick={() => setPendingDemoAction({ type: "activate", profileId: profile.id })}>
+                  {activeDemo?.profileId === profile.id ? "Reload profile" : "Review and load"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
 
         {choices.length === 0 ? (
           <section className="progress-empty">
@@ -236,7 +389,13 @@ export default function ProgressScreen({
                   <p className="estimate-explanation">Estimated 1RM uses the Epley formula for sets of 1–30 repetitions. It is an estimate, not an actual tested maximum. For bodyweight movements entered as 0 {weightUnit}, zero volume and estimated 1RM reflect only the entered external weight, not the athlete&apos;s complete performance.</p>
                 </section>
 
-                <VolumeTrendChart series={analytics.volumeSeries} weightUnit={weightUnit} />
+                <ProgressTrendChart
+                  sessions={analytics.sessionsNewestFirst}
+                  series={analytics.volumeSeries}
+                  metric={chartMetric}
+                  weightUnit={weightUnit}
+                  onMetricChange={setChartMetric}
+                />
 
                 <section className="progress-panel" aria-labelledby="personal-records-title">
                   <div className="progress-section-heading">
@@ -321,6 +480,26 @@ export default function ProgressScreen({
           <button onClick={onNavigateSettings}><span>⚙</span>Settings</button>
         </nav>
       </div>
+      <ConfirmDialog
+        open={pendingDemoAction?.type === "activate"}
+        title={`Load ${pendingDemoAction?.type === "activate" ? getDemoProfile(pendingDemoAction.profileId).name : "demo profile"}?`}
+        description={workoutHistory.length > 0
+          ? "This fictional profile will replace the current workout history, which will not be restored automatically. Exporting a CSV first is recommended. Templates, custom exercises and Settings are unaffected."
+          : "This loads fictional synthetic workout history. Templates, custom exercises and Settings are unaffected."}
+        confirmLabel="Load fictional profile"
+        destructive={workoutHistory.length > 0}
+        onCancel={() => setPendingDemoAction(null)}
+        onConfirm={confirmDemoAction}
+      />
+      <ConfirmDialog
+        open={pendingDemoAction?.type === "exit"}
+        title="Exit demo and clear demo workouts?"
+        description="This removes the currently loaded synthetic workout history, rebuilt previous-set data and demo label. Settings, templates and custom exercises stay unchanged. History from before demo activation cannot be restored automatically."
+        confirmLabel="Exit and clear demo workouts"
+        destructive
+        onCancel={() => setPendingDemoAction(null)}
+        onConfirm={confirmDemoAction}
+      />
     </main>
   );
 }

@@ -431,7 +431,7 @@ export function parseWorkoutCsv(source: string): WorkoutCsvParseResult {
         exercises,
         ...summary,
       };
-      if (!isSavedWorkout(savedWorkout)) throw new Error(`Workout ${workout.id} does not satisfy Lift Off workout validation.`);
+      if (!isSavedWorkout(savedWorkout)) throw new Error(`Workout ${workout.id} does not satisfy Overload workout validation.`);
       return savedWorkout;
     }).sort((first, second) => Date.parse(second.startedAt) - Date.parse(first.startedAt));
 
@@ -520,5 +520,5 @@ export function createWorkoutCsvFilename(referenceDate = new Date()): string {
   const year = referenceDate.getFullYear();
   const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
   const day = String(referenceDate.getDate()).padStart(2, "0");
-  return `lift-off-workouts-${year}-${month}-${day}.csv`;
+  return `overload-workouts-${year}-${month}-${day}.csv`;
 }

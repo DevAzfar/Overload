@@ -76,7 +76,7 @@ function invalidStoreResult(rawValue: string, storage: StorageLike): CustomExerc
   return {
     exercises: [],
     error: cleared
-      ? "Invalid custom-exercise data was removed. Built-in exercises and other Lift Off data were not changed."
+      ? "Invalid custom-exercise data was removed. Built-in exercises and other Overload data were not changed."
       : "Custom-exercise data is invalid and could not be cleared because device storage is unavailable.",
     status: cleared ? "corrupt" : "recovery-failed",
     rawValue,
@@ -91,7 +91,7 @@ export function loadCustomExercises(storage: StorageLike = getBrowserStorage()):
   } catch {
     return {
       exercises: [],
-      error: "Lift Off could not access custom exercises on this device. Built-in exercises are still available.",
+      error: "Overload could not access custom exercises on this device. Built-in exercises are still available.",
       status: "unavailable",
       rawValue: null,
     };

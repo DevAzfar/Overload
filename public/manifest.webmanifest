@@ -1,0 +1,23 @@
+{
+  "name": "Overload",
+  "short_name": "Overload",
+  "description": "A local-first workout tracker and progress analytics portfolio prototype.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#18191d",
+  "theme_color": "#242529",
+  "icons": [
+    {
+      "src": "./icons/overload-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/overload-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

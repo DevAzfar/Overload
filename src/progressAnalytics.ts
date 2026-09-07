@@ -49,6 +49,13 @@ export type VolumeTrendPoint = {
   volume: number;
 };
 
+export type EstimatedOneRepMaxTrendPoint = {
+  workoutId: string;
+  workoutName: string;
+  startedAt: string;
+  estimatedOneRepMax: number;
+};
+
 export type PersonalRecordCategory = "weight" | "repetitions" | "estimated-one-rep-max";
 
 export type PersonalRecordAchievement = {
@@ -219,6 +226,19 @@ export function createVolumeSeries(sessionsNewestFirst: ExerciseSessionProgress[
     startedAt: session.startedAt,
     volume: session.volume,
   }));
+}
+
+export function createEstimatedOneRepMaxSeries(
+  sessionsNewestFirst: ExerciseSessionProgress[],
+): EstimatedOneRepMaxTrendPoint[] {
+  return [...sessionsNewestFirst].reverse().flatMap((session) =>
+    session.bestEstimatedOneRepMax === null ? [] : [{
+      workoutId: session.workoutId,
+      workoutName: session.workoutName,
+      startedAt: session.startedAt,
+      estimatedOneRepMax: session.bestEstimatedOneRepMax,
+    }],
+  );
 }
 
 export function detectPersonalRecords(sessionsNewestFirst: ExerciseSessionProgress[]): PersonalRecordEvent[] {

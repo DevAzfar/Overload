@@ -1,0 +1,289 @@
+﻿schema_version,workout_id,workout_name,started_at,finished_at,duration_seconds,exercise_index,exercise_id,exercise_name,muscle,equipment,set_index,weight_kg,reps,rpe,complete
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,0,70,6,8,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,1,57.5,8,8,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,2,55,9,8.5,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,24,9,8,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,22,11,,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,22,10,8.5,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,0,55,10,7.5,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,1,55,9,,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,2,50,12,8.5,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,25,12,,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,25,10,8,true
+1,demo-plateau-01,Bench development,2025-04-08T18:20:00.000Z,2025-04-08T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,22.5,14,9,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,0,100,5,8,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,1,95,7,,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,2,90,9,8.5,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,90,8,8,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,90,7,,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,85,10,9,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,0,60,9,8,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,1,57.5,11,,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,2,55,12,8.5,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,0,75,12,,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,1,75,11,8,true
+1,demo-plateau-02,Lower and back,2025-04-11T17:50:00.000Z,2025-04-11T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,2,70,15,9,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,0,72.5,6,8.5,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,1,60,9,,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,2,57.5,10,8.5,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,24,10,8,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,22,11,,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,22,10,8.5,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,0,57.5,10,7.5,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,1,57.5,9,,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,2,52.5,12,8.5,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,25,12,,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,25,10,8,true
+1,demo-plateau-03,Bench development,2025-04-15T18:20:00.000Z,2025-04-15T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,22.5,14,9,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,0,101.25,6,8,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,1,96.25,7,,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,2,91.25,9,8.5,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,91.5,8,8,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,91.5,7,,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,86.5,10,9,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,0,62.5,9,8,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,1,60,11,,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,2,57.5,12,8.5,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,0,76,12,,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,1,76,11,8,true
+1,demo-plateau-04,Lower and back,2025-04-18T17:50:00.000Z,2025-04-18T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,2,71,15,9,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,0,75,6,9,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,1,62.5,7,8,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,2,60,8,8.5,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,24,9,8,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,22,11,,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,22,10,8.5,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,0,60,10,7.5,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,1,60,9,,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,2,55,12,8.5,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,25,12,,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,25,10,8,true
+1,demo-plateau-05,Bench development,2025-04-22T18:20:00.000Z,2025-04-22T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,22.5,14,9,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,0,102.5,5,8,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,1,97.5,7,,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,2,92.5,9,8.5,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,93,8,8,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,93,7,,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,88,10,9,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,0,65,9,8,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,1,62.5,11,,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,2,60,12,8.5,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,0,77,12,,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,1,77,11,8,true
+1,demo-plateau-06,Lower and back,2025-04-25T17:50:00.000Z,2025-04-25T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,2,72,15,9,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,0,77.5,6,8,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,1,65,10,,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,2,62.5,11,8.5,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,25,10,8,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,23,11,,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,23,10,8.5,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,0,62.5,10,7.5,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,1,62.5,9,,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,2,57.5,12,8.5,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,25,12,,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,25,10,8,true
+1,demo-plateau-07,Bench development,2025-04-29T18:20:00.000Z,2025-04-29T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,22.5,14,9,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,0,103.75,6,8,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,1,98.75,7,,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,2,93.75,9,8.5,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,94.5,8,8,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,94.5,7,,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,89.5,10,9,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,0,67.5,9,8,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,1,65,11,,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,2,62.5,12,8.5,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,0,78,12,,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,1,78,11,8,true
+1,demo-plateau-08,Lower and back,2025-05-02T17:50:00.000Z,2025-05-02T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,2,73,15,9,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,0,77.5,6,8.5,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,1,65,8,8,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,2,62.5,9,8.5,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,25,9,8,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,23,11,,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,23,10,8.5,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,0,65,10,7.5,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,1,65,9,,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,2,60,12,8.5,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,27.5,12,,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,27.5,10,8,true
+1,demo-plateau-09,Bench development,2025-05-06T18:20:00.000Z,2025-05-06T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,25,14,9,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,0,105,5,8,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,1,100,7,,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,2,95,9,8.5,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,96,8,8,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,96,7,,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,91,10,9,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,0,60,9,8,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,1,57.5,11,,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,2,55,12,8.5,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,0,79,12,,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,1,79,11,8,true
+1,demo-plateau-10,Lower and back,2025-05-09T17:50:00.000Z,2025-05-09T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,2,74,15,9,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,0,80,5,9,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,1,67.5,11,,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,2,65,12,8.5,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,25,10,8,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,23,11,,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,23,10,8.5,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,0,55,10,7.5,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,1,55,9,,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,2,50,12,8.5,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,27.5,12,,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,27.5,10,8,true
+1,demo-plateau-11,Bench development,2025-05-13T18:20:00.000Z,2025-05-13T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,25,14,9,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,0,106.25,6,8,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,1,101.25,7,,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,2,96.25,9,8.5,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,97.5,8,8,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,97.5,7,,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,92.5,10,9,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,0,62.5,9,8,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,1,60,11,,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,2,,,,false
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,0,80,12,,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,1,80,11,8,true
+1,demo-plateau-12,Lower and back,2025-05-16T17:50:00.000Z,2025-05-16T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,2,75,15,9,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,0,77.5,6,8,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,1,65,8,8,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,2,62.5,9,8.5,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,26,9,8,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,24,11,,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,24,10,8.5,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,0,57.5,10,7.5,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,1,57.5,9,,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,2,52.5,12,8.5,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,27.5,12,,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,27.5,10,8,true
+1,demo-plateau-13,Bench development,2025-05-20T18:20:00.000Z,2025-05-20T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,25,14,9,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,0,107.5,5,8,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,1,102.5,7,,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,2,97.5,9,8.5,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,99,8,8,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,99,7,,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,94,10,9,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,0,65,9,8,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,1,62.5,11,,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,2,60,12,8.5,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,0,81,12,,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,1,81,11,8,true
+1,demo-plateau-14,Lower and back,2025-05-23T17:50:00.000Z,2025-05-23T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,2,76,15,9,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,0,80,5,8.5,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,1,67.5,9,,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,2,65,8,9,false
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,26,10,8,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,24,11,,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,24,10,8.5,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,0,60,10,7.5,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,1,60,9,,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,2,55,12,8.5,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,27.5,12,,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,27.5,10,8,true
+1,demo-plateau-15,Bench development,2025-05-27T18:20:00.000Z,2025-05-27T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,25,14,9,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,0,108.75,6,8,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,1,103.75,7,,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,2,98.75,9,8.5,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,100.5,8,8,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,100.5,7,,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,95.5,10,9,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,0,67.5,9,8,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,1,65,11,,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,2,62.5,12,8.5,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,0,82,12,,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,1,82,11,8,true
+1,demo-plateau-16,Lower and back,2025-05-30T17:50:00.000Z,2025-05-30T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,2,77,15,9,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,0,77.5,6,9,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,1,65,7,8,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,0,bench,Barbell Bench Press,Chest,Barbell,2,62.5,8,8.5,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,26,9,8,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,24,11,,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,24,10,8.5,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,0,62.5,10,7.5,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,1,62.5,9,,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,2,cable-row,Seated Cable Row,Back,Cable,2,57.5,12,8.5,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,30,12,,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,30,10,8,true
+1,demo-plateau-17,Bench development,2025-06-03T18:20:00.000Z,2025-06-03T19:25:00.000Z,3900,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,27.5,14,9,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,0,110,5,8,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,1,105,7,,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,2,100,9,8.5,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,102,8,8,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,102,7,,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,97,10,9,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,0,60,9,8,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,1,57.5,11,,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,2,55,12,8.5,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,0,83,12,,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,1,83,11,8,true
+1,demo-plateau-18,Lower and back,2025-06-06T17:50:00.000Z,2025-06-06T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,2,78,15,9,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,0,82.5,6,8,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,1,70,10,,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,0,bench,Barbell Bench Press,Chest,Barbell,2,67.5,11,8.5,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,27,10,8,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,25,11,,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,25,10,8.5,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,0,65,10,7.5,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,1,65,9,,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,2,cable-row,Seated Cable Row,Back,Cable,2,60,12,8.5,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,30,12,,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,30,10,8,true
+1,demo-plateau-19,Bench breakthrough,2025-06-10T18:20:00.000Z,2025-06-10T19:28:30.000Z,4110,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,27.5,14,9,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,0,111.25,6,8,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,1,106.25,7,,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,0,squat,Back Squat,Quadriceps,Barbell,2,101.25,9,8.5,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,103.5,8,8,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,103.5,7,,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,98.5,10,9,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,0,62.5,9,8,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,1,60,11,,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,2,lat-pulldown,Lat Pulldown,Back,Cable,2,57.5,12,8.5,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,0,84,12,,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,1,84,11,8,true
+1,demo-plateau-20,Lower and back,2025-06-13T17:50:00.000Z,2025-06-13T18:50:00.000Z,3600,3,calf,Standing Calf Raise,Calves,Machine,2,79,15,9,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,0,85,5,8.5,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,1,72.5,8,8,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,0,bench,Barbell Bench Press,Chest,Barbell,2,70,9,8.5,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,27,9,8,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,25,11,,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,25,10,8.5,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,0,55,10,7.5,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,1,55,9,,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,2,cable-row,Seated Cable Row,Back,Cable,2,50,12,8.5,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,30,12,,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,30,10,8,true
+1,demo-plateau-21,Bench breakthrough,2025-06-17T18:20:00.000Z,2025-06-17T19:32:00.000Z,4320,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,27.5,14,9,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,0,112.5,5,8,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,1,107.5,7,,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,0,squat,Back Squat,Quadriceps,Barbell,2,102.5,9,8.5,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,105,8,8,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,105,7,,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,100,10,9,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,0,65,9,8,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,1,62.5,11,,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,2,lat-pulldown,Lat Pulldown,Back,Cable,2,60,12,8.5,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,0,85,12,,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,1,85,11,8,true
+1,demo-plateau-22,Lower and back,2025-06-20T17:50:00.000Z,2025-06-20T18:54:00.000Z,3840,3,calf,Standing Calf Raise,Calves,Machine,2,80,15,9,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,0,87.5,5,9,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,1,75,11,,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,0,bench,Barbell Bench Press,Chest,Barbell,2,72.5,12,8.5,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,0,27,10,8,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,1,25,11,,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,1,incline-db,Incline Dumbbell Press,Chest,Dumbbell,2,25,10,8.5,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,0,57.5,10,7.5,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,1,57.5,9,,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,2,cable-row,Seated Cable Row,Back,Cable,2,52.5,12,8.5,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,0,30,12,,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,1,30,10,8,true
+1,demo-plateau-23,Bench breakthrough,2025-06-24T18:20:00.000Z,2025-06-24T19:35:30.000Z,4530,3,triceps-pushdown,Triceps Pushdown,Triceps,Cable,2,27.5,14,9,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,0,113.75,6,8,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,1,108.75,7,,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,0,squat,Back Squat,Quadriceps,Barbell,2,103.75,9,8.5,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,0,106.5,8,8,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,1,106.5,7,,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,1,rdl,Romanian Deadlift,Hamstrings,Barbell,2,101.5,10,9,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,0,67.5,9,8,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,1,65,11,,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,2,lat-pulldown,Lat Pulldown,Back,Cable,2,62.5,12,8.5,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,0,86,12,,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,1,86,11,8,true
+1,demo-plateau-24,Lower and back,2025-06-27T17:50:00.000Z,2025-06-27T18:58:00.000Z,4080,3,calf,Standing Calf Raise,Calves,Machine,2,81,15,9,true

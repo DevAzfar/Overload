@@ -194,7 +194,7 @@ export function loadWorkoutHistoryResult(
     return {
       data: [],
       status: "unavailable",
-      message: "Lift Off could not read workout History from device storage. The empty state may not reflect the data stored on this device.",
+      message: "Overload could not read workout History from device storage. The empty state may not reflect the data stored on this device.",
       rawValue: null,
     };
   }
@@ -295,7 +295,7 @@ export function loadPreviousSetsResult(
     return {
       data: {},
       status: "unavailable",
-      message: "Lift Off could not read previous-set data from device storage.",
+      message: "Overload could not read previous-set data from device storage.",
       rawValue: null,
     };
   }

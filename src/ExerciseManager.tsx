@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import BrandLogo from "./BrandLogo";
 import ConfirmDialog from "./ConfirmDialog";
 import {
   EQUIPMENT_TYPES,
@@ -181,7 +182,7 @@ export default function ExerciseManager({
       : customExercises.map((exercise) => exercise.id === editingId ? savedExercise : exercise);
 
     if (!onCommit(nextExercises)) {
-      setFormError("Lift Off could not save this exercise on your device. Your complete draft and saved exercises are unchanged.");
+      setFormError("Overload could not save this exercise on your device. Your complete draft and saved exercises are unchanged.");
       return;
     }
 
@@ -206,7 +207,7 @@ export default function ExerciseManager({
 
     const nextExercises = customExercises.filter((candidate) => candidate.id !== exercise.id);
     if (!onCommit(nextExercises)) {
-      setManagerError(`Lift Off could not delete ${exercise.name}. The saved exercise is unchanged.`);
+      setManagerError(`Overload could not delete ${exercise.name}. The saved exercise is unchanged.`);
       setExerciseToDelete(null);
       return;
     }
@@ -229,7 +230,7 @@ export default function ExerciseManager({
           <button type="button" className="text-button history-back-button" onClick={requestBack}>
             <span aria-hidden="true">←</span> Templates
           </button>
-          <span className="progress-header-mark">LIFT OFF</span>
+          <span className="progress-header-mark"><BrandLogo size="compact" /><span>OVERLOAD</span></span>
         </header>
 
         <section className="template-intro" aria-labelledby="manage-exercises-title">
