@@ -159,4 +159,4 @@ Overload is a portfolio web prototype and is not medical advice, professional co
 
 ## Author and portfolio use
 
-Built by [Azucci3rd](https://github.com/Azucci3rd) as a React and TypeScript portfolio project focused on data validation, local-first reliability, accessible interaction and honest workout analytics.
+Built by [DevAzfar](https://github.com/DevAzfar) as a React and TypeScript portfolio project focused on data validation, local-first reliability, accessible interaction and honest workout analytics.
