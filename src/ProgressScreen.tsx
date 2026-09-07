@@ -5,8 +5,10 @@ import { DEMO_PROFILES, getDemoProfile, type DemoChartMetric } from "./demoProfi
 import type { DemoMetadata, DemoProfileId } from "./demoMetadata";
 import {
   buildExerciseChoices,
+  calculateTimeAxisPositions,
   calculateExerciseProgress,
   createEstimatedOneRepMaxSeries,
+  filterRecordedExerciseChoices,
   type ExerciseSessionProgress,
   type ExerciseMetricBest,
   type PersonalRecordAchievement,
@@ -57,12 +59,12 @@ function formatProgressDate(dateString: string) {
   }).format(new Date(dateString));
 }
 
-function formatShortDate(dateString: string) {
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(dateString));
+function formatShortDate(dateString: string, includeYear = false) {
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", ...(includeYear ? { year: "numeric" } : {}) }).format(new Date(dateString));
 }
 
 function formatBestDetail(best: ExerciseMetricBest | null) {
-  return best ? `${best.workoutName} · ${formatShortDate(best.startedAt)}` : "No eligible sets";
+  return best ? `${best.workoutName} · ${formatShortDate(best.startedAt, true)}` : "No eligible sets";
 }
 
 function recordLabel(achievement: PersonalRecordAchievement, weightUnit: WeightUnit) {
@@ -111,6 +113,7 @@ function ProgressTrendChart({
     ? series.map((point) => ({ ...point, value: point.volume }))
     : estimateSeries.map((point) => ({ ...point, value: point.estimatedOneRepMax }));
   const values = points.map((point) => point.value);
+  const spansYears = points.length > 1 && new Date(points[0].startedAt).getFullYear() !== new Date(points[points.length - 1].startedAt).getFullYear();
   const formatValue = (value: number) => metric === "volume"
     ? formatVolumeFromKilograms(value, weightUnit)
     : formatEstimatedOneRepMax(value, weightUnit);
@@ -134,8 +137,9 @@ function ProgressTrendChart({
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
   const range = maximum - minimum;
+  const xPositions = calculateTimeAxisPositions(points, width, padding);
   const coordinates = points.map((point, index) => {
-    const x = points.length === 1 ? width / 2 : padding + (index / (points.length - 1)) * (width - padding * 2);
+    const x = xPositions[index];
     const y = range === 0 ? height / 2 : padding + ((maximum - point.value) / range) * (height - padding * 2);
     return {
       ...point,
@@ -144,7 +148,7 @@ function ProgressTrendChart({
     };
   });
   const accessibleValues = points
-    .map((point) => `${formatShortDate(point.startedAt)}: ${formatValue(point.value)}`)
+    .map((point) => `${formatShortDate(point.startedAt, spansYears)}: ${formatValue(point.value)}`)
     .join("; ");
 
   return (
@@ -171,13 +175,13 @@ function ProgressTrendChart({
           )}
           {coordinates.map((point) => (
             <circle className="volume-chart-point" key={`${point.workoutId}-${point.startedAt}`} cx={point.x} cy={point.y} r="2.2">
-              <title>{formatShortDate(point.startedAt)} · {formatValue(point.value)}</title>
+              <title>{formatShortDate(point.startedAt, spansYears)} · {formatValue(point.value)}</title>
             </circle>
           ))}
         </svg>
         <div className="volume-chart-labels" aria-hidden="true">
-          <span>{formatShortDate(points[0].startedAt)}<strong>{formatValue(points[0].value)}</strong></span>
-          {points.length > 1 && <span>{formatShortDate(points[points.length - 1].startedAt)}<strong>{formatValue(points[points.length - 1].value)}</strong></span>}
+          <span>{formatShortDate(points[0].startedAt, spansYears)}<strong>{formatValue(points[0].value)}</strong></span>
+          {points.length > 1 && <span>{formatShortDate(points[points.length - 1].startedAt, spansYears)}<strong>{formatValue(points[points.length - 1].value)}</strong></span>}
         </div>
       </div>
       <p className="sr-only">Horizontal axis: session date from oldest to newest. Vertical axis: {metricLabel}. Recorded values: {accessibleValues}</p>
@@ -211,6 +215,11 @@ export default function ProgressScreen({
     () => buildExerciseChoices(workoutHistory, exerciseLibrary),
     [exerciseLibrary, workoutHistory],
   );
+  const [exerciseSearch, setExerciseSearch] = useState("");
+  const filteredChoices = useMemo(
+    () => filterRecordedExerciseChoices(choices, exerciseSearch),
+    [choices, exerciseSearch],
+  );
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
   const [chartMetric, setChartMetric] = useState<DemoChartMetric>("volume");
   const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
@@ -218,10 +227,10 @@ export default function ProgressScreen({
   const [demoMessage, setDemoMessage] = useState("");
   const [demoError, setDemoError] = useState("");
   const activeDemoProfile = activeDemo ? getDemoProfile(activeDemo.profileId) : null;
-  const selectedStillExists = choices.some((choice) => choice.exerciseId === selectedExerciseId);
-  const automaticSelection = choices.find((choice) => choice.hasValidPerformance)?.exerciseId ?? choices[0]?.exerciseId ?? "";
+  const selectedStillExists = filteredChoices.some((choice) => choice.exerciseId === selectedExerciseId);
+  const automaticSelection = filteredChoices.find((choice) => choice.hasValidPerformance)?.exerciseId ?? filteredChoices[0]?.exerciseId ?? "";
   const activeExerciseId = selectedStillExists ? selectedExerciseId : automaticSelection;
-  const hasAnyValidPerformance = choices.some((choice) => choice.hasValidPerformance);
+  const hasAnyValidPerformance = filteredChoices.some((choice) => choice.hasValidPerformance);
   const analytics = useMemo(
     () => activeExerciseId ? calculateExerciseProgress(workoutHistory, activeExerciseId, exerciseLibrary) : null,
     [activeExerciseId, exerciseLibrary, workoutHistory],
@@ -341,17 +350,40 @@ export default function ProgressScreen({
           </section>
         ) : (
           <>
-            <label className="progress-exercise-selector">
-              <span>Select exercise</span>
-              <select value={activeExerciseId} onChange={(event) => {
-                setSelectedExerciseId(event.target.value);
-                setExpandedSessionIds([]);
-              }}>
-                {choices.map((choice) => (
-                  <option value={choice.exerciseId} key={choice.exerciseId}>{choice.displayName}</option>
-                ))}
-              </select>
-            </label>
+            <div className="progress-recorded-controls">
+              <label className="progress-recorded-search">
+                <span>Search recorded exercises</span>
+                <input
+                  type="search"
+                  value={exerciseSearch}
+                  onChange={(event) => setExerciseSearch(event.target.value)}
+                  placeholder="e.g. Bench press"
+                  aria-describedby="progress-recorded-search-help"
+                  aria-controls="progress-recorded-results"
+                />
+              </label>
+              <p id="progress-recorded-search-help">Only exercises contained in saved workouts appear here.</p>
+            </div>
+
+            {filteredChoices.length === 0 ? (
+              <section id="progress-recorded-results" className="progress-empty compact-progress-empty" role="status">
+                <h2>No recorded exercises match</h2>
+                <p>Try a different exercise name or clear the search. An exercise appears after a workout containing it is saved.</p>
+                <button type="button" className="text-button" onClick={() => setExerciseSearch("")}>Clear search</button>
+              </section>
+            ) : (
+              <div id="progress-recorded-results">
+                <label className="progress-exercise-selector">
+                  <span>Recorded exercises</span>
+                  <select value={activeExerciseId} onChange={(event) => {
+                    setSelectedExerciseId(event.target.value);
+                    setExpandedSessionIds([]);
+                  }}>
+                    {filteredChoices.map((choice) => (
+                      <option value={choice.exerciseId} key={choice.exerciseId}>{choice.displayName}</option>
+                    ))}
+                  </select>
+                </label>
 
             {!hasAnyValidPerformance ? (
               <section className="progress-empty compact-progress-empty">
@@ -444,7 +476,7 @@ export default function ProgressScreen({
                           </button>
                           {expanded && (
                             <div className="progress-session-details" id={detailsId}>
-                              <div className="progress-set-table-wrap">
+                              <div className="progress-set-table-wrap" tabIndex={0} aria-label={`Scrollable performance sets for ${session.workoutName}`}>
                                 <table className="progress-set-table">
                                   <caption className="sr-only">Valid completed sets from {session.workoutName}</caption>
                                   <thead><tr><th>Set</th><th>Performance</th><th>RPE</th><th>Volume</th><th>Estimated 1RM</th></tr></thead>
@@ -470,6 +502,8 @@ export default function ProgressScreen({
                 </section>
               </>
             ) : null}
+              </div>
+            )}
           </>
         )}
 

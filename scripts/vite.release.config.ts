@@ -8,6 +8,7 @@ export default defineConfig({
         reliability: "scripts/reliability-check.ts",
         workoutCsv: "scripts/verify-workout-csv.ts",
         demoData: "scripts/verify-demo-data.ts",
+        defectFixes: "scripts/verify-defect-fixes.ts",
       },
       formats: ["es"],
       fileName: (_format, entryName) => `${entryName}.mjs`,

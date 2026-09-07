@@ -44,6 +44,11 @@ assert(
   "development dependency set should remain unchanged",
 );
 assert(!existsSync(join(root, ".github/workflows")), "no GitHub Actions workflow should be created in this pass");
+const brandLogoSource = readFileSync(join(root, "src/BrandLogo.tsx"), "utf8");
+assert(brandLogoSource.includes("icons/overload-192.png") && !brandLogoSource.includes("brand/overload-logo.png"), "in-app marks should use the 192px logo derivative");
+const appSource = readFileSync(join(root, "src/App.tsx"), "utf8");
+const templateSelectionSource = appSource.slice(appSource.indexOf("function openTemplateSelection"), appSource.indexOf("function resetWorkoutExerciseFilters"));
+assert(!templateSelectionSource.includes("setTemplateStorageMessage"), "opening template selection should preserve storage recovery warnings");
 
 const dist = join(root, "dist");
 assert(existsSync(dist), "production build output should exist before running this check");
@@ -69,5 +74,6 @@ for (const id of ["demo-beginner-24", "demo-plateau-24", "demo-inconsistent-21"]
   assert(bundledText.includes(id), `${id} should be present in bundled raw demo data`);
 }
 assert(!bundledText.includes("RocketMark") && !bundledText.includes("LIFT OFF"), "built application should not contain obsolete visible branding");
+assert(bundledText.includes("icons/overload-192.png") && !bundledText.includes("brand/overload-logo.png"), "production UI should select the compact logo asset");
 
 console.log("Overload release verification passed: metadata, package identity, brand assets and bundled demo data are present.");

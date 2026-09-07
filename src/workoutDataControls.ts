@@ -10,6 +10,7 @@ import {
 } from "./workoutHistory";
 import { WORKOUT_TEMPLATES_KEY } from "./workoutTemplates";
 import { DEMO_METADATA_KEY } from "./demoMetadata";
+import { ACTIVE_WORKOUT_DRAFT_KEY } from "./activeWorkoutDraft";
 import { getBrowserStorage, type StorageLike } from "./storageTypes";
 
 export const WORKOUT_DATA_KEYS = Object.freeze([WORKOUT_HISTORY_KEY, PREVIOUS_SETS_KEY] as const);
@@ -25,6 +26,7 @@ export const ALL_APP_STORAGE_KEYS = Object.freeze([
   CUSTOM_EXERCISES_KEY,
   APP_SETTINGS_KEY,
   DEMO_METADATA_KEY,
+  ACTIVE_WORKOUT_DRAFT_KEY,
 ] as const);
 
 export type StorageMutationResult =

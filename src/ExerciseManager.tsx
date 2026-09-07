@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import BrandLogo from "./BrandLogo";
 import ConfirmDialog from "./ConfirmDialog";
 import {
@@ -62,6 +62,7 @@ export default function ExerciseManager({
   const [exerciseToDelete, setExerciseToDelete] = useState<CustomExercise | null>(null);
   const [confirmCancelDraft, setConfirmCancelDraft] = useState(false);
   const [cancelThenBack, setCancelThenBack] = useState(false);
+  const searchId = useId();
 
   useEffect(() => { headingRef.current?.focus(); }, []);
   useEffect(() => { onDraftStateChange?.(showForm); }, [onDraftStateChange, showForm]);
@@ -306,14 +307,23 @@ export default function ExerciseManager({
         <section className="exercise-management-list" aria-labelledby="exercise-results-title">
           <div className="template-section-heading">
             <div><p className="eyebrow">Built-in and custom</p><h2 id="exercise-results-title">All exercises</h2></div>
-            <span aria-live="polite">{filteredExercises.length} matches</span>
+            <span id="exercise-manager-result-count" aria-live="polite">{filteredExercises.length} matches</span>
           </div>
 
           <div className="management-filters">
-            <label className="search-box">
-              <span aria-hidden="true">⌕</span>
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by exercise name" />
-            </label>
+            <div className="search-field">
+              <label htmlFor={searchId}>Search exercises</label>
+              <div className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  id={searchId}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Exercise name"
+                  aria-describedby="exercise-manager-result-count"
+                />
+              </div>
+            </div>
             <div className="exercise-filter-grid">
               <label>
                 <span>Muscle</span>

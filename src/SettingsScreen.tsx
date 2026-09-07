@@ -348,7 +348,7 @@ export default function SettingsScreen({
             <button type="button" disabled={destructiveDataActionsBlocked} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("clear"); }}>Clear workout data</button>
           </div>
           <div className="danger-action">
-            <div><h3>Reset all app data</h3><p>Deletes every Overload-owned localStorage record and restores source defaults. Unrelated website data is preserved.</p></div>
+            <div><h3>Reset all app data</h3><p>Deletes every Overload-owned localStorage record, including any active-workout draft, and restores source defaults. Unrelated website data is preserved.</p></div>
             <button type="button" disabled={destructiveDataActionsBlocked} onClick={() => { setSettingsError(""); setSettingsMessage(""); setConfirmation("reset"); }}>Reset all app data</button>
           </div>
         </section>
@@ -381,7 +381,7 @@ export default function SettingsScreen({
       <ConfirmDialog
         open={confirmation === "reset"}
         title="Reset all Overload data?"
-        description="This deletes every Overload-owned workout, previous-set, template, custom-exercise and settings record. Unrelated website storage is not touched."
+        description="This deletes every Overload-owned workout, active-workout draft, previous-set, template, custom-exercise and settings record. Unrelated website storage is not touched."
         confirmLabel="Reset all app data"
         destructive
         onCancel={() => setConfirmation(null)}

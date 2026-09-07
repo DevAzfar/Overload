@@ -16,7 +16,7 @@ Portfolio screenshots are intentionally pending until the final application can 
 
 ## Features
 
-- Live workout logging with a running timer, set completion and canonical kilogram storage
+- Live workout logging with recoverable active drafts, a running timer, set completion and canonical kilogram storage
 - Built-in and locally saved custom exercises with independent search and filtering
 - Reusable built-in and custom workout templates
 - Persistent workout History with expanded set details, editing and deletion
@@ -67,6 +67,7 @@ Incomplete sets remain in History but do not contribute to completed-set volume,
 - `src/progressAnalytics.ts` calculates exercise sessions, volume, E1RM and records.
 - `src/demoProfiles.ts` imports bundled CSV text and performs revalidated date alignment.
 - `src/demoMetadata.ts` validates the active-demo marker independently of History.
+- `src/activeWorkoutDraft.ts` validates and persists versioned raw active-workout input for explicit recovery.
 
 The interface is a small state-driven single-page application without a URL router or backend.
 
@@ -77,6 +78,7 @@ Workout History, previous sets, templates, custom exercises and preferences are 
 Browser storage is origin-specific. Data entered on localhost or another domain will not automatically appear on a deployed site. Clearing site/browser storage can permanently remove local data. Overload does not transmit workout records to a server.
 
 Legacy `lift-off-*` storage keys remain intentionally unchanged so existing browser data continues to load after the product rename.
+The versioned `overload-active-workout-draft-v1` key stores an unfinished workout locally. Raw weight text is paired with the unit in which it was entered, so recovery never repeatedly converts kilograms and pounds. A recoverable draft is resumed or discarded only after an explicit choice.
 
 ## CSV backup scope
 
@@ -122,6 +124,7 @@ npx vite build --config scripts/vite.release.config.ts
 node .release-tmp/reliability.mjs
 node .release-tmp/workoutCsv.mjs
 node .release-tmp/demoData.mjs
+node .release-tmp/defectFixes.mjs
 node scripts/verify-release.mjs
 git diff --check
 ```

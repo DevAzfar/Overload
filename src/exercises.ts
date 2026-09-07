@@ -1,5 +1,3 @@
-import type { PreviousSet } from "./workoutHistory";
-
 export const MUSCLE_GROUPS = Object.freeze([
   "Chest",
   "Back",
@@ -152,27 +150,6 @@ export const BUILT_IN_EXERCISES = defineBuiltInExercises([
   { id: "neck-extension", name: "Neck Extension", muscle: "Neck", equipment: "Other" },
   { id: "lateral-neck-flexion", name: "Lateral Neck Flexion", muscle: "Neck", equipment: "Other" },
 ]);
-
-const FALLBACK_PREVIOUS_SETS = Object.freeze({
-  bench: Object.freeze([Object.freeze({ weight: 70, reps: 8 }), Object.freeze({ weight: 70, reps: 7 })]),
-  "incline-db": Object.freeze([Object.freeze({ weight: 26, reps: 9 }), Object.freeze({ weight: 26, reps: 8 })]),
-  "pull-up": Object.freeze([Object.freeze({ weight: 32, reps: 6 }), Object.freeze({ weight: 32, reps: 5 })]),
-  "lat-pulldown": Object.freeze([]),
-  "cable-row": Object.freeze([Object.freeze({ weight: 68, reps: 10 }), Object.freeze({ weight: 68, reps: 9 })]),
-  ohp: Object.freeze([Object.freeze({ weight: 50, reps: 6 }), Object.freeze({ weight: 50, reps: 5 })]),
-  lateral: Object.freeze([Object.freeze({ weight: 7.5, reps: 12 }), Object.freeze({ weight: 7.5, reps: 11 })]),
-  squat: Object.freeze([Object.freeze({ weight: 100, reps: 6 }), Object.freeze({ weight: 100, reps: 6 })]),
-  rdl: Object.freeze([Object.freeze({ weight: 95, reps: 8 }), Object.freeze({ weight: 95, reps: 7 })]),
-  "split-squat": Object.freeze([Object.freeze({ weight: 24, reps: 8 }), Object.freeze({ weight: 24, reps: 8 })]),
-  curl: Object.freeze([Object.freeze({ weight: 20, reps: 10 }), Object.freeze({ weight: 20, reps: 9 })]),
-  triceps: Object.freeze([Object.freeze({ weight: 25, reps: 10 }), Object.freeze({ weight: 25, reps: 9 })]),
-  calf: Object.freeze([Object.freeze({ weight: 70, reps: 12 }), Object.freeze({ weight: 70, reps: 11 })]),
-} satisfies Readonly<Record<string, readonly Readonly<PreviousSet>[]>>);
-
-export function getFallbackPreviousSets(exerciseId: string): PreviousSet[] {
-  const sets = FALLBACK_PREVIOUS_SETS[exerciseId as keyof typeof FALLBACK_PREVIOUS_SETS] ?? [];
-  return sets.map((set) => ({ weight: set.weight, reps: set.reps }));
-}
 
 export function isMuscleGroup(value: unknown): value is MuscleGroup {
   return typeof value === "string" && MUSCLE_GROUPS.some((muscle) => muscle === value);

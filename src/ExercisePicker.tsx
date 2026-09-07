@@ -39,6 +39,7 @@ export default function ExercisePicker({
 }: ExercisePickerProps) {
   const titleId = useId();
   const resultCountId = useId();
+  const searchId = useId();
   const dialogRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   useDialogFocus(true, dialogRef, searchRef, onClose);
@@ -77,15 +78,20 @@ export default function ExercisePicker({
           <button type="button" className="modal-close" onClick={onClose} aria-label="Close exercise picker">×</button>
         </header>
 
-        <label className="search-box">
-          <span aria-hidden="true">⌕</span>
-          <input
-            ref={searchRef}
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search exercise, muscle or equipment"
-          />
-        </label>
+        <div className="search-field">
+          <label htmlFor={searchId}>Search exercises</label>
+          <div className="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input
+              id={searchId}
+              ref={searchRef}
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Exercise, muscle or equipment"
+              aria-describedby={resultCountId}
+            />
+          </div>
+        </div>
 
         <div className="exercise-filter-grid">
           <label>

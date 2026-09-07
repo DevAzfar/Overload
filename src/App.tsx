@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ActiveWorkoutRecoveryDialog from "./ActiveWorkoutRecoveryDialog";
 import BrandLogo from "./BrandLogo";
 import { alignDemoProfileToReferenceDate, getDemoProfile } from "./demoProfiles";
 import {
@@ -27,10 +28,10 @@ import {
   combineExerciseLibrary,
   createExerciseLookup,
   getExerciseById,
-  getFallbackPreviousSets,
   type CustomExercise,
   type Equipment,
   type Exercise,
+  type ExerciseKind,
   type MuscleGroup,
 } from "./exercises";
 import ProgressScreen from "./ProgressScreen";
@@ -70,7 +71,33 @@ import {
 } from "./workoutDataControls";
 import { deleteWorkoutFromHistory, replaceWorkoutInHistory } from "./historyMutations";
 import { type StorageLoadStatus } from "./storageTypes";
-import { validateEditableSet, validateTemplateName, validateWorkoutName } from "./workoutValidation";
+import {
+  hasSetFieldErrors,
+  validateEditableSet,
+  validateTemplateName,
+  validateWorkoutName,
+  type SetFieldErrors,
+  type SetFieldName,
+} from "./workoutValidation";
+import {
+  ACTIVE_WORKOUT_DRAFT_KEY,
+  activeDraftHasEnteredData,
+  activeDraftIsMeaningful,
+  calculateActiveWorkoutElapsedSeconds,
+  loadActiveWorkoutDraft,
+  removeActiveWorkoutDraft,
+  removeDraftExercise,
+  removeDraftSet,
+  saveActiveWorkoutDraft,
+  serialiseActiveWorkoutDraft,
+  type ActiveWorkoutDraft,
+  type ActiveWorkoutDraftExercise,
+  type ActiveWorkoutDraftSet,
+} from "./activeWorkoutDraft";
+import {
+  WORKOUT_CSV_MAX_EXERCISES_PER_WORKOUT,
+  WORKOUT_CSV_MAX_SETS_PER_EXERCISE,
+} from "./workoutCsv";
 import {
   formatCompactVolumeFromKilograms,
   formatDisplayNumber,
@@ -81,8 +108,17 @@ import {
 } from "./weightUnits";
 
 type Screen = "welcome" | "home" | "templates" | "template-editor" | "exercise-manager" | "workout" | "history" | "history-editor" | "progress" | "settings";
-type SetEntry = { weight: string; reps: string; rpe: string; complete: boolean };
-type LoggedExercise = Exercise & { previous: PreviousSet[]; sessionId: string; sets: SetEntry[] };
+type SetEntry = ActiveWorkoutDraftSet;
+type LoggedExercise = {
+  id: string;
+  name: string;
+  muscle: string;
+  equipment: string;
+  kind: ExerciseKind;
+  previous: PreviousSet[];
+  sessionId: string;
+  sets: SetEntry[];
+};
 type LocalWeekRange = { start: Date; endExclusive: Date; endDisplay: Date };
 type DashboardSummary = {
   weekRange: LocalWeekRange;
@@ -92,7 +128,20 @@ type DashboardSummary = {
   latestWorkout: SavedWorkout | null;
 };
 
-const blankSet = (): SetEntry => ({ weight: "", reps: "", rpe: "", complete: false });
+function createActiveEntryId(prefix: string) {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+const blankSet = (): SetEntry => ({ id: createActiveEntryId("set"), weight: "", reps: "", rpe: "", complete: false });
+
+function setHasEnteredData(set: SetEntry) {
+  return set.complete || Boolean(set.weight.trim() || set.reps.trim() || set.rpe.trim());
+}
+
+function activeFieldId(sessionId: string, setId: string, field: SetFieldName) {
+  return `active-${sessionId}-${setId}-${field}`;
+}
 
 function formatTime(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -238,6 +287,12 @@ export default function Home() {
   const [workoutName, setWorkoutName] = useState("");
   const [savedPrevious, setSavedPrevious] = useState<PreviousSetsByExercise>({});
   const [workoutStartedAt, setWorkoutStartedAt] = useState<number | null>(null);
+  const [workoutInputUnit, setWorkoutInputUnit] = useState<WeightUnit | null>(null);
+  const [activeSetErrors, setActiveSetErrors] = useState<Record<string, SetFieldErrors>>({});
+  const [activeDraftStorageError, setActiveDraftStorageError] = useState("");
+  const [recoverableActiveDraft, setRecoverableActiveDraft] = useState<ActiveWorkoutDraft | null>(null);
+  const [activeDraftLoadStatus, setActiveDraftLoadStatus] = useState<StorageLoadStatus | "unsupported">("missing");
+  const [activeDraftLoadMessage, setActiveDraftLoadMessage] = useState("");
   const [workoutHistory, setWorkoutHistory] = useState<SavedWorkout[]>([]);
   const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);
   const [templateDraft, setTemplateDraft] = useState<WorkoutTemplate | null>(null);
@@ -256,7 +311,12 @@ export default function Home() {
   const [historyActionError, setHistoryActionError] = useState("");
   const [historyDraft, setHistoryDraft] = useState<SavedWorkout | null>(null);
   const [historyDraftUnit, setHistoryDraftUnit] = useState<WeightUnit>("kg");
-  const [pendingConfirmation, setPendingConfirmation] = useState<"reset-template" | "delete-template" | "discard-template" | "cancel-workout" | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<"reset-template" | "delete-template" | "discard-template" | "cancel-workout" | "discard-recovered-workout" | "discard-unreadable-workout" | null>(null);
+  const [activeRemovalTarget, setActiveRemovalTarget] = useState<
+    | { type: "set"; sessionId: string; setId: string; exerciseName: string; setNumber: number }
+    | { type: "exercise"; sessionId: string; exerciseName: string }
+    | null
+  >(null);
   const [customExerciseDraftOpen, setCustomExerciseDraftOpen] = useState(false);
   const [settingsDraftOpen, setSettingsDraftOpen] = useState(false);
   const [activeDemo, setActiveDemo] = useState<DemoMetadata | null>(null);
@@ -266,18 +326,72 @@ export default function Home() {
   const storageSnapshotReadyRef = useRef(false);
   const unsafeStorageKeysRef = useRef<Set<string>>(new Set());
   const unsafeWorkRef = useRef(false);
+  const lastPersistedActiveDraftRef = useRef<string | null>(null);
+
+  function createCurrentActiveDraft(): ActiveWorkoutDraft | null {
+    if (workoutStartedAt === null || workoutInputUnit === null) return null;
+    return {
+      version: 1,
+      workoutName,
+      startedAt: workoutStartedAt,
+      weightUnit: workoutInputUnit,
+      exercises: loggedExercises.map((exercise) => ({
+        id: exercise.id,
+        sessionId: exercise.sessionId,
+        name: exercise.name,
+        muscle: exercise.muscle,
+        equipment: exercise.equipment,
+        kind: exercise.kind,
+        sets: exercise.sets.map((set) => ({ ...set })),
+      })),
+    };
+  }
 
   useEffect(() => {
     if (screen !== "workout" || workoutStartedAt === null) return;
 
     const updateElapsedTime = () => {
-      setSeconds(Math.max(0, Math.floor((Date.now() - workoutStartedAt) / 1000)));
+      setSeconds(calculateActiveWorkoutElapsedSeconds(workoutStartedAt));
     };
 
     updateElapsedTime();
     const interval = window.setInterval(updateElapsedTime, 1000);
     return () => window.clearInterval(interval);
   }, [screen, workoutStartedAt]);
+
+  useEffect(() => {
+    const draft = createCurrentActiveDraft();
+    if (!draft) return;
+    let serialised: string;
+    try {
+      serialised = serialiseActiveWorkoutDraft(draft);
+    } catch (error) {
+      setActiveDraftStorageError(error instanceof Error ? error.message : "The latest workout draft could not be validated for recovery.");
+      return;
+    }
+    if (serialised === lastPersistedActiveDraftRef.current) return;
+
+    const result = saveActiveWorkoutDraft(draft, lastPersistedActiveDraftRef.current);
+    if (!result.ok) {
+      setActiveDraftStorageError(result.message);
+      if (result.conflict) setCrossTabConflict("The active workout draft changed in another tab. This local workout remains open and will not overwrite it.");
+      return;
+    }
+    lastPersistedActiveDraftRef.current = result.rawValue;
+    recordExpectedRawValues(new Map([[ACTIVE_WORKOUT_DRAFT_KEY, result.rawValue]]));
+    setActiveDraftStorageError("");
+  }, [loggedExercises, workoutInputUnit, workoutName, workoutStartedAt]);
+
+  useEffect(() => {
+    const draft = createCurrentActiveDraft();
+    if (!draft || !activeDraftIsMeaningful(draft)) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [loggedExercises, workoutInputUnit, workoutName, workoutStartedAt]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -316,6 +430,11 @@ export default function Home() {
       demoLoad.message,
       demoLoad.metadata && historyLoad.data.length === 0 ? "Demo metadata was ignored because no readable demo workout history is present." : "",
     ].filter(Boolean).join(" "));
+    const activeDraftLoad = loadActiveWorkoutDraft();
+    setRecoverableActiveDraft(activeDraftLoad.draft);
+    setActiveDraftLoadStatus(activeDraftLoad.status);
+    setActiveDraftLoadMessage(activeDraftLoad.message);
+    lastPersistedActiveDraftRef.current = activeDraftLoad.rawValue;
     unsafeStorageKeysRef.current = new Set([
       ...(historyLoad.status === "unavailable" || historyLoad.status === "recovery-failed" ? [WORKOUT_DATA_KEYS[0]] : []),
       ...(previousLoad.status === "unavailable" || previousLoad.status === "recovery-failed" ? [WORKOUT_DATA_KEYS[1]] : []),
@@ -323,6 +442,7 @@ export default function Home() {
       ...(customExerciseLoad.status === "unavailable" || customExerciseLoad.status === "recovery-failed" ? [CUSTOM_EXERCISES_KEY] : []),
       ...(templateLoad.status === "unavailable" || templateLoad.status === "recovery-failed" ? [WORKOUT_TEMPLATES_KEY] : []),
       ...(demoLoad.status === "unavailable" || demoLoad.status === "recovery-failed" ? [DEMO_METADATA_KEY] : []),
+      ...(activeDraftLoad.status === "unavailable" || activeDraftLoad.status === "corrupt" || activeDraftLoad.status === "unsupported" ? [ACTIVE_WORKOUT_DRAFT_KEY] : []),
     ]);
     try {
       expectedRawValuesRef.current = readStorageSnapshot(ALL_APP_STORAGE_KEYS);
@@ -348,6 +468,7 @@ export default function Home() {
       const settingsLoad = loadAppSettings();
       const customLoad = loadCustomExercises();
       const demoLoad = loadDemoMetadata();
+      const activeDraftLoad = loadActiveWorkoutDraft();
       setWorkoutHistory(historyLoad.data);
       setSavedPrevious(previousLoad.data);
       const templateLoad = loadWorkoutTemplatesResult();
@@ -360,6 +481,10 @@ export default function Home() {
         demoLoad.metadata && historyLoad.data.length === 0 ? "Demo metadata was ignored because no readable demo workout history is present." : "",
       ].filter(Boolean).join(" "));
       setAppSettings(settingsLoad.settings);
+      setRecoverableActiveDraft(activeDraftLoad.draft);
+      setActiveDraftLoadStatus(activeDraftLoad.status);
+      setActiveDraftLoadMessage(activeDraftLoad.message);
+      lastPersistedActiveDraftRef.current = activeDraftLoad.rawValue;
       setHistoryLoadStatus(
         previousLoad.status === "unavailable" || previousLoad.status === "recovery-failed"
           ? previousLoad.status
@@ -376,6 +501,7 @@ export default function Home() {
         ...(customLoad.status === "unavailable" || customLoad.status === "recovery-failed" ? [CUSTOM_EXERCISES_KEY] : []),
         ...(templateLoad.status === "unavailable" || templateLoad.status === "recovery-failed" ? [WORKOUT_TEMPLATES_KEY] : []),
         ...(demoLoad.status === "unavailable" || demoLoad.status === "recovery-failed" ? [DEMO_METADATA_KEY] : []),
+        ...(activeDraftLoad.status === "unavailable" || activeDraftLoad.status === "corrupt" || activeDraftLoad.status === "unsupported" ? [ACTIVE_WORKOUT_DRAFT_KEY] : []),
       ]);
       setExpandedWorkoutIds([]);
       setHistoryActionMessage("Saved Overload data was reloaded after a change in another tab.");
@@ -413,10 +539,11 @@ export default function Home() {
   );
   const resolvedDisplayName = getResolvedDisplayName(appSettings);
   const displayInitials = getDisplayInitials(resolvedDisplayName);
+  const activeWeightUnit = workoutInputUnit ?? appSettings.weightUnit;
 
   const liveDisplayVolume = loggedExercises.reduce(
     (total, exercise) =>
-      total + exercise.sets.reduce((setTotal, set) => setTotal + completedSetVolume(set, appSettings.weightUnit), 0),
+      total + exercise.sets.reduce((setTotal, set) => setTotal + completedSetVolume(set, activeWeightUnit), 0),
     0,
   );
 
@@ -484,14 +611,69 @@ export default function Home() {
   }
 
   function createLoggedExercise(exercise: Exercise): LoggedExercise {
-    const previous = (savedPrevious[exercise.id] ?? getFallbackPreviousSets(exercise.id))
-      .map((set) => ({ ...set }));
+    const previous = (savedPrevious[exercise.id] ?? []).map((set) => ({ ...set }));
     return { ...exercise, previous, sessionId: createExerciseSessionId(exercise.id), sets: [blankSet()] };
   }
 
+  function loggedExerciseFromDraft(exercise: ActiveWorkoutDraftExercise): LoggedExercise {
+    return {
+      ...exercise,
+      previous: (savedPrevious[exercise.id] ?? []).map((set) => ({ ...set })),
+      sets: exercise.sets.map((set) => ({ ...set })),
+    };
+  }
+
+  function resumeRecoveredWorkout() {
+    if (!recoverableActiveDraft) return;
+    setWorkoutName(recoverableActiveDraft.workoutName);
+    setWorkoutStartedAt(recoverableActiveDraft.startedAt);
+    setWorkoutInputUnit(recoverableActiveDraft.weightUnit);
+    setLoggedExercises(recoverableActiveDraft.exercises.map(loggedExerciseFromDraft));
+    setActiveSetErrors({});
+    setActiveDraftStorageError("");
+    setRecoverableActiveDraft(null);
+    setCompletedMessage("");
+    setWorkoutError("");
+    setScreen("workout");
+  }
+
+  function discardStoredActiveDraft() {
+    const result = removeActiveWorkoutDraft(lastPersistedActiveDraftRef.current);
+    setPendingConfirmation(null);
+    if (!result.ok) {
+      setActiveDraftLoadMessage(result.message);
+      if (result.conflict) setCrossTabConflict("The active workout draft changed in another tab and was not discarded.");
+      return false;
+    }
+    lastPersistedActiveDraftRef.current = null;
+    recordExpectedRawValues(new Map([[ACTIVE_WORKOUT_DRAFT_KEY, null]]));
+    unsafeStorageKeysRef.current.delete(ACTIVE_WORKOUT_DRAFT_KEY);
+    setRecoverableActiveDraft(null);
+    setActiveDraftLoadStatus("missing");
+    setActiveDraftLoadMessage("");
+    return true;
+  }
+
+  function requestDiscardRecoveredDraft() {
+    if (!recoverableActiveDraft) return;
+    if (activeDraftHasEnteredData(recoverableActiveDraft)) setPendingConfirmation("discard-recovered-workout");
+    else discardStoredActiveDraft();
+  }
+
+  function requestDiscardUnreadableDraft() {
+    setPendingConfirmation("discard-unreadable-workout");
+  }
+
   function openTemplateSelection() {
+    if (recoverableActiveDraft) {
+      setTemplateSelectionError("Resume or discard the saved workout draft before starting another workout.");
+      return;
+    }
+    if (activeDraftLoadStatus === "unavailable" || activeDraftLoadStatus === "corrupt" || activeDraftLoadStatus === "unsupported") {
+      setTemplateSelectionError("Resolve or discard the unreadable saved workout draft before starting another workout.");
+      return;
+    }
     setTemplateSelectionError("");
-    setTemplateStorageMessage("");
     setEmptyWorkoutName("");
     setScreen("templates");
   }
@@ -710,6 +892,13 @@ export default function Home() {
     setCustomExercises([]);
     setAppSettings(getDefaultAppSettings());
     setActiveDemo(null);
+    setRecoverableActiveDraft(null);
+    setActiveDraftLoadStatus("missing");
+    setActiveDraftLoadMessage("");
+    setActiveDraftStorageError("");
+    setWorkoutInputUnit(null);
+    setActiveSetErrors({});
+    lastPersistedActiveDraftRef.current = null;
     setDemoStorageWarning("");
     setExpandedWorkoutIds([]);
     setTemplateDraft(null);
@@ -744,16 +933,51 @@ export default function Home() {
       );
       return;
     }
+    if (exerciseIds.length > WORKOUT_CSV_MAX_EXERCISES_PER_WORKOUT) {
+      setTemplateSelectionError(`A workout can contain at most ${WORKOUT_CSV_MAX_EXERCISES_PER_WORKOUT} exercise occurrences so it remains exportable.`);
+      return;
+    }
+    if (!storageKeyStillExpected(ACTIVE_WORKOUT_DRAFT_KEY)) {
+      setTemplateSelectionError("Overload could not safely verify the saved active-workout draft. Reload before starting another workout.");
+      return;
+    }
 
     const exercises = exerciseIds.map((exerciseId) =>
       createLoggedExercise(getExerciseById(exerciseLookup, exerciseId)!),
     );
+    const startedAt = Date.now();
+    const draft: ActiveWorkoutDraft = {
+      version: 1,
+      workoutName: trimmedName,
+      startedAt,
+      weightUnit: appSettings.weightUnit,
+      exercises: exercises.map((exercise) => ({
+        id: exercise.id,
+        sessionId: exercise.sessionId,
+        name: exercise.name,
+        muscle: exercise.muscle,
+        equipment: exercise.equipment,
+        kind: exercise.kind,
+        sets: exercise.sets.map((set) => ({ ...set })),
+      })),
+    };
+    const draftResult = saveActiveWorkoutDraft(draft, lastPersistedActiveDraftRef.current);
+    if (!draftResult.ok) {
+      setTemplateSelectionError(draftResult.message);
+      if (draftResult.conflict) setCrossTabConflict("An active workout draft changed in another tab. A new workout was not started.");
+      return;
+    }
+    lastPersistedActiveDraftRef.current = draftResult.rawValue;
+    recordExpectedRawValues(new Map([[ACTIVE_WORKOUT_DRAFT_KEY, draftResult.rawValue]]));
 
     setTemplateSelectionError("");
     setWorkoutName(trimmedName);
-    setWorkoutStartedAt(Date.now());
+    setWorkoutStartedAt(startedAt);
+    setWorkoutInputUnit(appSettings.weightUnit);
     setSeconds(0);
     setLoggedExercises(exercises);
+    setActiveSetErrors({});
+    setActiveDraftStorageError("");
     setWorkoutError("");
     setCompletedMessage("");
     setScreen("workout");
@@ -772,7 +996,13 @@ export default function Home() {
   }
 
   function addExerciseToWorkout(exercise: Exercise) {
+    if (loggedExercises.length >= WORKOUT_CSV_MAX_EXERCISES_PER_WORKOUT) {
+      setWorkoutError(`A workout can contain at most ${WORKOUT_CSV_MAX_EXERCISES_PER_WORKOUT} exercise occurrences so it remains exportable.`);
+      setShowWorkoutPicker(false);
+      return;
+    }
     setLoggedExercises((current) => [...current, createLoggedExercise(exercise)]);
+    setWorkoutError("");
     setShowWorkoutPicker(false);
     resetWorkoutExerciseFilters();
   }
@@ -879,6 +1109,7 @@ export default function Home() {
     }
 
     setWorkoutTemplates(nextTemplates);
+    setTemplateStorageMessage("");
     captureExpectedKey(WORKOUT_TEMPLATES_KEY);
     setTemplateDraft(null);
     setEditingTemplateId(null);
@@ -909,6 +1140,7 @@ export default function Home() {
     }
 
     setWorkoutTemplates(nextTemplates);
+    setTemplateStorageMessage("");
     captureExpectedKey(WORKOUT_TEMPLATES_KEY);
     setTemplateDraft({ ...defaultTemplate, exerciseIds: [...defaultTemplate.exerciseIds] });
     setTemplateError("");
@@ -934,6 +1166,7 @@ export default function Home() {
     }
 
     setWorkoutTemplates(nextTemplates);
+    setTemplateStorageMessage("");
     captureExpectedKey(WORKOUT_TEMPLATES_KEY);
     setTemplateDraft(null);
     setEditingTemplateId(null);
@@ -951,33 +1184,108 @@ export default function Home() {
     setScreen("templates");
   }
 
-  function updateSet(sessionId: string, setIndex: number, field: keyof SetEntry, value: string | boolean) {
+  function updateSet(sessionId: string, setIndex: number, field: SetFieldName | "complete", value: string | boolean) {
     setWorkoutError("");
+    const currentSet = loggedExercises.find((exercise) => exercise.sessionId === sessionId)?.sets[setIndex];
+    if (!currentSet) return;
+    const updatedSet = { ...currentSet, [field]: value } as SetEntry;
+    const validation = validateEditableSet(updatedSet, workoutInputUnit ?? appSettings.weightUnit);
+    setActiveSetErrors((errors) => {
+      const next = { ...errors };
+      if (hasSetFieldErrors(validation.errors)) next[currentSet.id] = validation.errors;
+      else delete next[currentSet.id];
+      return next;
+    });
     setLoggedExercises((current) =>
       current.map((exercise) =>
         exercise.sessionId !== sessionId
           ? exercise
           : {
               ...exercise,
-              sets: exercise.sets.map((set, index) => index === setIndex ? { ...set, [field]: value } : set),
+              sets: exercise.sets.map((set, index) => index === setIndex ? updatedSet : set),
             },
       ),
     );
   }
 
+  function performSetRemoval(sessionId: string, setId: string) {
+    setLoggedExercises((current) => removeDraftSet(current, sessionId, setId) as LoggedExercise[]);
+    setActiveSetErrors((current) => {
+      const next = { ...current };
+      delete next[setId];
+      return next;
+    });
+    setActiveRemovalTarget(null);
+    setWorkoutError("");
+  }
+
+  function requestSetRemoval(exercise: LoggedExercise, set: SetEntry, setIndex: number) {
+    if (exercise.sets.length <= 1) return;
+    if (!setHasEnteredData(set)) {
+      performSetRemoval(exercise.sessionId, set.id);
+      return;
+    }
+    setActiveRemovalTarget({
+      type: "set",
+      sessionId: exercise.sessionId,
+      setId: set.id,
+      exerciseName: exercise.name,
+      setNumber: setIndex + 1,
+    });
+  }
+
+  function performExerciseRemoval(sessionId: string) {
+    const removedSetIds = loggedExercises.find((exercise) => exercise.sessionId === sessionId)?.sets.map((set) => set.id) ?? [];
+    setLoggedExercises((current) => removeDraftExercise(current, sessionId) as LoggedExercise[]);
+    setActiveSetErrors((current) => {
+      const next = { ...current };
+      removedSetIds.forEach((setId) => delete next[setId]);
+      return next;
+    });
+    setActiveRemovalTarget(null);
+    setWorkoutError("");
+  }
+
+  function requestExerciseRemoval(exercise: LoggedExercise) {
+    const hasMoreThanInitialBlankState = exercise.sets.length > 1 || exercise.sets.some(setHasEnteredData);
+    if (!hasMoreThanInitialBlankState) {
+      performExerciseRemoval(exercise.sessionId);
+      return;
+    }
+    setActiveRemovalTarget({ type: "exercise", sessionId: exercise.sessionId, exerciseName: exercise.name });
+  }
+
+  function addSetToExercise(exercise: LoggedExercise) {
+    if (exercise.sets.length >= WORKOUT_CSV_MAX_SETS_PER_EXERCISE) {
+      setWorkoutError(`${exercise.name} can contain at most ${WORKOUT_CSV_MAX_SETS_PER_EXERCISE} sets so the workout remains exportable.`);
+      return;
+    }
+    setLoggedExercises((current) => current.map((item) => item.sessionId === exercise.sessionId
+      ? { ...item, sets: [...item.sets, blankSet()] }
+      : item));
+    setWorkoutError("");
+  }
+
   function hasMeaningfulWorkoutData() {
-    return (
-      loggedExercises.length > 0 ||
-      loggedExercises.some((exercise) =>
-        exercise.sets.some((set) => set.weight.trim() || set.reps.trim() || set.rpe.trim() || set.complete),
-      )
-    );
+    return loggedExercises.length > 0 || loggedExercises.some((exercise) => exercise.sets.some(setHasEnteredData));
   }
 
   function cancelWorkout() {
+    const removal = removeActiveWorkoutDraft(lastPersistedActiveDraftRef.current);
+    if (!removal.ok) {
+      setPendingConfirmation(null);
+      setWorkoutError(`${removal.message} The workout remains open.`);
+      if (removal.conflict) setCrossTabConflict("The saved active workout changed in another tab. This local workout remains open.");
+      return;
+    }
+    lastPersistedActiveDraftRef.current = null;
+    recordExpectedRawValues(new Map([[ACTIVE_WORKOUT_DRAFT_KEY, null]]));
     setLoggedExercises([]);
     setWorkoutName("");
     setWorkoutStartedAt(null);
+    setWorkoutInputUnit(null);
+    setActiveSetErrors({});
+    setActiveDraftStorageError("");
     setSeconds(0);
     setShowWorkoutPicker(false);
     resetWorkoutExerciseFilters();
@@ -1003,18 +1311,33 @@ export default function Home() {
       setWorkoutError(workoutNameError);
       return;
     }
-    const setResults = loggedExercises.flatMap((exercise) =>
-      exercise.sets.map((set) => validateEditableSet(set, appSettings.weightUnit)),
-    );
-    const completedSets = setResults.filter((result) => result.canonicalSet?.complete);
-
-    if (completedSets.length === 0) {
-      setWorkoutError("Complete at least one set with a valid weight and more than zero repetitions before finishing.");
+    const inputUnit = workoutInputUnit ?? appSettings.weightUnit;
+    const validatedSets = loggedExercises.flatMap((exercise) => exercise.sets.map((set) => ({
+      set,
+      result: validateEditableSet(set, inputUnit),
+      sessionId: exercise.sessionId,
+    })));
+    const nextErrors: Record<string, SetFieldErrors> = {};
+    let firstInvalidFieldId = "";
+    let invalidFieldCount = 0;
+    validatedSets.forEach(({ set, result, sessionId }) => {
+      if (!hasSetFieldErrors(result.errors)) return;
+      nextErrors[set.id] = result.errors;
+      (["weight", "reps", "rpe"] as SetFieldName[]).forEach((field) => {
+        if (!result.errors[field]) return;
+        invalidFieldCount += 1;
+        if (!firstInvalidFieldId) firstInvalidFieldId = activeFieldId(sessionId, set.id, field);
+      });
+    });
+    setActiveSetErrors(nextErrors);
+    if (invalidFieldCount > 0) {
+      setWorkoutError(`Correct ${invalidFieldCount} invalid ${invalidFieldCount === 1 ? "field" : "fields"} before finishing. Your entered values are unchanged.`);
+      window.requestAnimationFrame(() => document.getElementById(firstInvalidFieldId)?.focus());
       return;
     }
-
-    if (setResults.some((result) => result.canonicalSet === null)) {
-      setWorkoutError("Correct every nonblank set value before finishing. Weight must be non-negative, repetitions above zero and RPE blank or between 1 and 10.");
+    const completedSets = validatedSets.filter(({ result }) => result.canonicalSet?.complete);
+    if (completedSets.length === 0) {
+      setWorkoutError("Complete at least one set with a valid weight and more than zero repetitions before finishing.");
       return;
     }
 
@@ -1029,7 +1352,7 @@ export default function Home() {
       name: exercise.name,
       muscle: exercise.muscle,
       equipment: exercise.equipment,
-      sets: exercise.sets.map((set) => toSavedSet(set, appSettings.weightUnit)),
+      sets: exercise.sets.map((set) => toSavedSet(set, inputUnit)),
     }));
     const savedSummary = calculateSavedWorkoutSummary(savedExercises);
     const savedWorkout: SavedWorkout = {
@@ -1047,7 +1370,14 @@ export default function Home() {
 
     const newPrevious = rebuildPreviousSetsFromHistory(nextHistory);
 
-    const storageResult = writeWorkoutDataWithRollback(nextHistory, newPrevious, historyMutationOptions());
+    const finishKeys = [...WORKOUT_AND_DEMO_DATA_KEYS, ACTIVE_WORKOUT_DRAFT_KEY];
+    const storageResult = writeWorkoutDataWithRollback(nextHistory, newPrevious, {
+      expectedRawValues: expectedValuesFor(finishKeys),
+      additionalChanges: new Map([
+        [DEMO_METADATA_KEY, null],
+        [ACTIVE_WORKOUT_DRAFT_KEY, null],
+      ]),
+    });
     if (!storageResult.ok) {
       if (storageResult.conflict) setCrossTabConflict("Workout data changed in another tab. Your active workout is still open and has not overwritten it.");
       setWorkoutError(`${storageResult.message} Your workout is still open, so please try again.`);
@@ -1058,6 +1388,7 @@ export default function Home() {
     setSavedPrevious(newPrevious);
     setActiveDemo(null);
     recordExpectedRawValues(storageResult.rawValues);
+    lastPersistedActiveDraftRef.current = null;
     setHistoryLoadStatus("loaded");
     setHistoryLoadMessage("");
     setHistoryNeedsSanitisedSave(false);
@@ -1065,6 +1396,9 @@ export default function Home() {
     setLoggedExercises([]);
     setWorkoutName("");
     setWorkoutStartedAt(null);
+    setWorkoutInputUnit(null);
+    setActiveSetErrors({});
+    setActiveDraftStorageError("");
     setSeconds(0);
     setWorkoutError("");
     setScreen("home");
@@ -1150,6 +1484,58 @@ export default function Home() {
     setHistoryNeedsSanitisedSave(false);
     setHistoryActionMessage("Workout deleted. Dashboard, Progress and previous-set comparisons were recalculated.");
     return { ok: true as const, message: "Workout deleted." };
+  }
+
+  if (workoutStartedAt === null && recoverableActiveDraft) {
+    return (
+      <main className="welcome-shell recovery-shell">
+        {pendingConfirmation !== "discard-recovered-workout" && (
+          <ActiveWorkoutRecoveryDialog
+            draft={recoverableActiveDraft}
+            onResume={resumeRecoveredWorkout}
+            onDiscard={requestDiscardRecoveredDraft}
+          />
+        )}
+        <ConfirmDialog
+          open={pendingConfirmation === "discard-recovered-workout"}
+          title="Discard saved workout draft?"
+          description={`Discard ${recoverableActiveDraft.workoutName} and all of its unsaved entered or completed sets? Saved History will not change.`}
+          confirmLabel="Discard workout draft"
+          destructive
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={discardStoredActiveDraft}
+        />
+      </main>
+    );
+  }
+
+  if (workoutStartedAt === null && (activeDraftLoadStatus === "corrupt" || activeDraftLoadStatus === "unsupported" || activeDraftLoadStatus === "unavailable")) {
+    return (
+      <main className="welcome-shell recovery-shell">
+        <section className="welcome-card unreadable-draft-card" aria-labelledby="unreadable-draft-title">
+          <div className="brand-lockup"><BrandLogo /><span>OVERLOAD</span></div>
+          <div className="welcome-copy">
+            <p className="eyebrow">Workout recovery</p>
+            <h1 id="unreadable-draft-title">Saved draft needs attention.</h1>
+            <p role="alert">{activeDraftLoadMessage}</p>
+          </div>
+          {activeDraftLoadStatus === "unavailable" ? (
+            <button className="primary-button" type="button" onClick={() => window.location.reload()}>Retry storage access</button>
+          ) : (
+            <button className="primary-button" type="button" onClick={requestDiscardUnreadableDraft}>Discard unreadable draft</button>
+          )}
+        </section>
+        <ConfirmDialog
+          open={pendingConfirmation === "discard-unreadable-workout"}
+          title="Discard unreadable workout draft?"
+          description="The saved draft cannot be safely restored. Discard only this active-workout draft so a new workout can be started. Saved History and other Overload data will not change."
+          confirmLabel="Discard unreadable draft"
+          destructive
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={discardStoredActiveDraft}
+        />
+      </main>
+    );
   }
 
   if (screen === "welcome") {
@@ -1522,12 +1908,13 @@ export default function Home() {
             <p className="eyebrow">{today}</p>
             <div className="workout-heading-row">
               <h1>{workoutName}</h1>
-              {liveDisplayVolume > 0 && <span className="volume-pill">{formatDisplayNumber(liveDisplayVolume)} {appSettings.weightUnit}</span>}
+              {liveDisplayVolume > 0 && <span className="volume-pill">{formatDisplayNumber(liveDisplayVolume)} {activeWeightUnit}</span>}
             </div>
             <div className="timer" aria-label={`Workout duration ${formatTime(seconds)}`}>{formatTime(seconds)}</div>
           </section>
 
           {workoutError && <div className="workout-alert" role="alert">{workoutError}</div>}
+          {activeDraftStorageError && <div className="workout-alert warning" role="alert">{activeDraftStorageError}</div>}
           {historyNeedsSanitisedSave && (
             <div className="workout-alert warning" role="status">History was recovered with ignored records. Successfully saving this workout will write only the visible recovered History and permanently discard those ignored records.</div>
           )}
@@ -1556,59 +1943,96 @@ export default function Home() {
                     <button
                       className="more-button"
                       aria-label={`Remove ${exercise.name}`}
-                      onClick={() => setLoggedExercises((current) => current.filter((item) => item.sessionId !== exercise.sessionId))}
+                      onClick={() => requestExerciseRemoval(exercise)}
                     >×</button>
                   </header>
 
+                  {exercise.previous.length === 0 && (
+                    <p className="no-previous-note">No previous performance. Complete this exercise to create a previous-performance reference.</p>
+                  )}
+
                   <div className="set-table">
                     <div className="set-row set-labels">
-                      <span>Set</span><span>Previous</span><span>{appSettings.weightUnit}</span><span>Reps</span><span>RPE</span><span />
+                      <span>Set</span><span>Previous</span><span>{activeWeightUnit}</span><span>Reps</span><span>RPE</span><span>Done</span><span>Remove</span>
                     </div>
                     {exercise.sets.map((set, index) => {
                       const previous = exercise.previous[index];
+                      const errors = activeSetErrors[set.id] ?? {};
+                      const weightId = activeFieldId(exercise.sessionId, set.id, "weight");
+                      const repsId = activeFieldId(exercise.sessionId, set.id, "reps");
+                      const rpeId = activeFieldId(exercise.sessionId, set.id, "rpe");
+                      const onlySet = exercise.sets.length === 1;
+                      const removalReasonId = `active-remove-reason-${exercise.sessionId}-${set.id}`;
                       return (
-                        <div className="set-row" key={index}>
-                          <span className="set-number">{index + 1}</span>
-                          <span className="previous-value">{previous ? `${formatWeightFromKilograms(previous.weight, appSettings.weightUnit)} × ${formatDisplayNumber(previous.reps)}` : "—"}</span>
-                          <input
-                            inputMode="decimal"
-                            aria-label={`${exercise.name} set ${index + 1} weight in ${appSettings.weightUnit === "kg" ? "kilograms" : "pounds"}`}
-                            value={set.weight}
-                            placeholder={previous ? formatWeightInputFromKilograms(previous.weight, appSettings.weightUnit) : "0"}
-                            onChange={(event) => updateSet(exercise.sessionId, index, "weight", event.target.value)}
-                          />
-                          <input
-                            inputMode="numeric"
-                            aria-label={`${exercise.name} set ${index + 1} repetitions`}
-                            value={set.reps}
-                            placeholder={previous ? String(previous.reps) : "0"}
-                            onChange={(event) => updateSet(exercise.sessionId, index, "reps", event.target.value)}
-                          />
-                          <input
-                            inputMode="decimal"
-                            aria-label={`${exercise.name} set ${index + 1} RPE`}
-                            value={set.rpe}
-                            placeholder="—"
-                            onChange={(event) => updateSet(exercise.sessionId, index, "rpe", event.target.value)}
-                          />
+                        <div className="set-row active-set-row" key={set.id}>
+                          <span className="set-number-cell"><small>Set</small><span className="set-number">{index + 1}</span></span>
+                          <span className="previous-value"><small>Previous</small>{previous ? `${formatWeightFromKilograms(previous.weight, activeWeightUnit)} × ${formatDisplayNumber(previous.reps)}` : "None recorded"}</span>
+                          <label className="active-set-field" htmlFor={weightId}>
+                            <span>Weight ({activeWeightUnit})</span>
+                            <input
+                              id={weightId}
+                              inputMode="decimal"
+                              aria-label={`${exercise.name} set ${index + 1} weight in ${activeWeightUnit === "kg" ? "kilograms" : "pounds"}`}
+                              aria-invalid={Boolean(errors.weight)}
+                              aria-describedby={errors.weight ? `${weightId}-error` : undefined}
+                              value={set.weight}
+                              placeholder={previous ? formatWeightInputFromKilograms(previous.weight, activeWeightUnit) : "0"}
+                              onChange={(event) => updateSet(exercise.sessionId, index, "weight", event.target.value)}
+                            />
+                            {errors.weight && <small className="active-field-error" id={`${weightId}-error`}>{errors.weight}</small>}
+                          </label>
+                          <label className="active-set-field" htmlFor={repsId}>
+                            <span>Repetitions</span>
+                            <input
+                              id={repsId}
+                              inputMode="decimal"
+                              aria-label={`${exercise.name} set ${index + 1} repetitions`}
+                              aria-invalid={Boolean(errors.reps)}
+                              aria-describedby={errors.reps ? `${repsId}-error` : undefined}
+                              value={set.reps}
+                              placeholder={previous ? String(previous.reps) : "0"}
+                              onChange={(event) => updateSet(exercise.sessionId, index, "reps", event.target.value)}
+                            />
+                            {errors.reps && <small className="active-field-error" id={`${repsId}-error`}>{errors.reps}</small>}
+                          </label>
+                          <label className="active-set-field" htmlFor={rpeId}>
+                            <span>RPE</span>
+                            <input
+                              id={rpeId}
+                              inputMode="decimal"
+                              aria-label={`${exercise.name} set ${index + 1} RPE`}
+                              aria-invalid={Boolean(errors.rpe)}
+                              aria-describedby={errors.rpe ? `${rpeId}-error` : undefined}
+                              value={set.rpe}
+                              placeholder="—"
+                              onChange={(event) => updateSet(exercise.sessionId, index, "rpe", event.target.value)}
+                            />
+                            {errors.rpe && <small className="active-field-error" id={`${rpeId}-error`}>{errors.rpe}</small>}
+                          </label>
                           <button
                             className={set.complete ? "set-check complete" : "set-check"}
                             type="button"
                             aria-pressed={set.complete}
-                            aria-label={set.complete ? "Mark set incomplete" : "Mark set complete"}
+                            aria-label={`Mark ${exercise.name} set ${index + 1} ${set.complete ? "incomplete" : "complete"}`}
                             onClick={() => updateSet(exercise.sessionId, index, "complete", !set.complete)}
                           >✓</button>
+                          <button
+                            className="remove-active-set"
+                            type="button"
+                            disabled={onlySet}
+                            aria-label={`Remove ${exercise.name} set ${index + 1}`}
+                            aria-describedby={onlySet ? removalReasonId : undefined}
+                            onClick={() => requestSetRemoval(exercise, set, index)}
+                          >Remove</button>
+                          {onlySet && <small className="set-removal-reason" id={removalReasonId}>Keep one set, or remove the exercise.</small>}
                         </div>
                       );
                     })}
                   </div>
                   <button
                     className="add-set-button"
-                    onClick={() =>
-                      setLoggedExercises((current) =>
-                        current.map((item) => item.sessionId === exercise.sessionId ? { ...item, sets: [...item.sets, blankSet()] } : item),
-                      )
-                    }
+                    type="button"
+                    onClick={() => addSetToExercise(exercise)}
                   >＋ Add set</button>
                 </article>
               ))}
@@ -1622,7 +2046,7 @@ export default function Home() {
           {loggedExercises.length === 0 && (
             <aside className="previous-hint">
               <span className="hint-icon" aria-hidden="true">↗</span>
-              <div><strong>Previous performance appears here</strong><p>Overload shows your last sets beside every exercise.</p></div>
+              <div><strong>No previous performance is invented</strong><p>Complete an exercise to create a factual previous-performance reference.</p></div>
             </aside>
           )}
         </div>
@@ -1653,6 +2077,22 @@ export default function Home() {
           destructive
           onCancel={() => setPendingConfirmation(null)}
           onConfirm={cancelWorkout}
+        />
+        <ConfirmDialog
+          open={activeRemovalTarget !== null}
+          title={activeRemovalTarget?.type === "set" ? "Remove entered set?" : "Remove exercise?"}
+          description={activeRemovalTarget?.type === "set"
+            ? `Remove ${activeRemovalTarget.exerciseName} set ${activeRemovalTarget.setNumber}? Its unsaved weight, repetitions, RPE and completion state will be discarded.`
+            : activeRemovalTarget
+              ? `Remove ${activeRemovalTarget.exerciseName}? All unsaved sets entered for this exercise will be discarded.`
+              : ""}
+          confirmLabel={activeRemovalTarget?.type === "set" ? "Remove set" : "Remove exercise"}
+          destructive
+          onCancel={() => setActiveRemovalTarget(null)}
+          onConfirm={() => {
+            if (activeRemovalTarget?.type === "set") performSetRemoval(activeRemovalTarget.sessionId, activeRemovalTarget.setId);
+            else if (activeRemovalTarget?.type === "exercise") performExerciseRemoval(activeRemovalTarget.sessionId);
+          }}
         />
       </main>
     );

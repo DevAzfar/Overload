@@ -155,6 +155,30 @@ export function buildExerciseChoices(
     );
 }
 
+export function filterRecordedExerciseChoices(
+  choices: readonly ExerciseProgressChoice[],
+  search: string,
+): ExerciseProgressChoice[] {
+  const term = search.trim().toLocaleLowerCase("en-GB");
+  if (!term) return [...choices];
+  return choices.filter((choice) => choice.displayName.toLocaleLowerCase("en-GB").includes(term));
+}
+
+export function calculateTimeAxisPositions(
+  points: readonly { startedAt: string }[],
+  width: number,
+  padding: number,
+): number[] {
+  if (points.length === 0) return [];
+  if (points.length === 1) return [width / 2];
+  const timestamps = points.map((point) => Date.parse(point.startedAt));
+  if (timestamps.some((timestamp) => !Number.isFinite(timestamp))) return points.map(() => width / 2);
+  const first = Math.min(...timestamps);
+  const last = Math.max(...timestamps);
+  if (last === first) return points.map(() => width / 2);
+  return timestamps.map((timestamp) => padding + ((timestamp - first) / (last - first)) * (width - padding * 2));
+}
+
 export function buildExerciseSessions(history: SavedWorkout[], exerciseId: string): ExerciseSessionProgress[] {
   const sessions: ExerciseSessionProgress[] = [];
 

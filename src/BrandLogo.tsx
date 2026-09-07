@@ -7,7 +7,7 @@ export default function BrandLogo({ size = "standard", decorative = true }: Bran
   return (
     <img
       className={`brand-logo brand-logo-${size}`}
-      src={`${import.meta.env.BASE_URL}brand/overload-logo.png`}
+      src={`${import.meta.env.BASE_URL}icons/overload-192.png`}
       alt={decorative ? "" : "Overload fist and dumbbell logo"}
       width={size === "compact" ? 30 : 46}
       height={size === "compact" ? 30 : 46}
