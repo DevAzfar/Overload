@@ -8,7 +8,7 @@ Overload is a mobile-first workout tracking and progress analytics prototype bui
 
 > Portfolio prototype · Web application · Local-first · Not an App Store release
 
-**Live demo:** Deployment pending. The repository is prepared for static hosting, but no site has been published yet.
+**Live demo:** [https://devazfar.github.io/Overload/](https://devazfar.github.io/Overload/)
 
 ## Screenshots
 
@@ -99,13 +99,13 @@ Exporting creates a local file but cannot guarantee that the browser or operatin
 Requirements: a current Node.js release and npm.
 
 ```bash
-git clone https://github.com/Azucci3rd/Lift_Off.git
-cd Lift_Off
+git clone https://github.com/DevAzfar/Overload.git
+cd Overload
 npm ci
 npm run dev
 ```
 
-Vite prints the local development address. The folder and remote still use the legacy repository name; only the application and private package are named Overload.
+Vite prints the local development address.
 
 ## npm commands
 
@@ -131,11 +131,11 @@ git diff --check
 
 The demo CSV assets are reproducible with `node scripts/generate-demo-data.mjs`.
 
-## Static deployment preparation
+## GitHub Pages deployment
 
 Vite uses a relative production base so application and image assets work under a repository subpath. The project builds to `dist/` and has no route-refresh requirement because it does not use URL-based routing.
 
-No deployment workflow is included and GitHub Pages is not enabled. A later approved deployment can either upload `dist/` to any static host or add a GitHub Pages workflow that runs `npm ci` and `npm run build` before uploading `dist/`.
+The Pages workflow runs `npm ci` and `npm run build` for pushes to `main` or a manual dispatch, uploads only `dist/`, and deploys it with the official GitHub Pages Actions. The repository must have Pages configured to use **GitHub Actions** as its source.
 
 ## Known limitations
 

@@ -43,7 +43,27 @@ assert(
   Object.keys(packageJson.devDependencies).sort().join(",") === "@types/react,@types/react-dom,@vitejs/plugin-react,typescript,vite",
   "development dependency set should remain unchanged",
 );
-assert(!existsSync(join(root, ".github/workflows")), "no GitHub Actions workflow should be created in this pass");
+const pagesWorkflowPath = join(root, ".github/workflows/deploy-pages.yml");
+assert(existsSync(pagesWorkflowPath), "the GitHub Pages workflow should exist");
+const pagesWorkflow = readFileSync(pagesWorkflowPath, "utf8");
+for (const expected of [
+  "branches: [main]",
+  "workflow_dispatch:",
+  "actions/checkout@v6",
+  "actions/configure-pages@v5",
+  "actions/setup-node@v6",
+  "npm ci",
+  "npm run build",
+  "actions/upload-pages-artifact@v4",
+  "path: dist",
+  "actions/deploy-pages@v4",
+  "pages: write",
+  "id-token: write",
+  "cancel-in-progress: false",
+]) {
+  assert(pagesWorkflow.includes(expected), `Pages workflow should include ${expected}`);
+}
+assert(!pagesWorkflow.includes("npm install"), "Pages workflow should use the lockfile-only npm install command");
 const brandLogoSource = readFileSync(join(root, "src/BrandLogo.tsx"), "utf8");
 assert(brandLogoSource.includes("icons/overload-192.png") && !brandLogoSource.includes("brand/overload-logo.png"), "in-app marks should use the 192px logo derivative");
 const appSource = readFileSync(join(root, "src/App.tsx"), "utf8");
@@ -52,6 +72,20 @@ assert(!templateSelectionSource.includes("setTemplateStorageMessage"), "opening 
 
 const dist = join(root, "dist");
 assert(existsSync(dist), "production build output should exist before running this check");
+const viteConfig = readFileSync(join(root, "vite.config.ts"), "utf8");
+assert(viteConfig.includes('base: "./"'), "Vite should emit relative URLs for the /Overload/ repository subpath");
+const builtHtml = readFileSync(join(dist, "index.html"), "utf8");
+for (const expected of ["./assets/", "./favicon-32.png", "./apple-touch-icon.png", "./manifest.webmanifest", "./og.png"]) {
+  assert(builtHtml.includes(expected), `production HTML should use subpath-safe URL ${expected}`);
+}
+const emittedAssets = [...builtHtml.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+\.(?:js|css))"/g)]
+  .map((match) => match[1]);
+assert(emittedAssets.some((path) => path.endsWith(".js")), "production HTML should reference an emitted JavaScript asset");
+assert(emittedAssets.some((path) => path.endsWith(".css")), "production HTML should reference an emitted CSS asset");
+emittedAssets.forEach((path) => assert(existsSync(join(dist, path)), `${path} should resolve inside the Pages artifact`));
+const builtManifest = JSON.parse(readFileSync(join(dist, "manifest.webmanifest"), "utf8"));
+assert(builtManifest.start_url === "./", "installed app start URL should remain relative to /Overload/");
+assert(builtManifest.icons.every((icon) => icon.src.startsWith("./icons/")), "manifest icons should resolve relative to /Overload/");
 for (const relativePath of [
   "favicon-32.png", "apple-touch-icon.png", "icons/overload-192.png", "icons/overload-512.png",
   "brand/overload-logo.png", "manifest.webmanifest", "og.png",
@@ -76,4 +110,4 @@ for (const id of ["demo-beginner-24", "demo-plateau-24", "demo-inconsistent-21"]
 assert(!bundledText.includes("RocketMark") && !bundledText.includes("LIFT OFF"), "built application should not contain obsolete visible branding");
 assert(bundledText.includes("icons/overload-192.png") && !bundledText.includes("brand/overload-logo.png"), "production UI should select the compact logo asset");
 
-console.log("Overload release verification passed: metadata, package identity, brand assets and bundled demo data are present.");
+console.log("Overload release verification passed: metadata, package identity, Pages configuration, subpath-safe assets and bundled demo data are present.");
