@@ -4,15 +4,25 @@
   <img src="public/brand/overload-logo.png" width="180" height="180" alt="Overload fist gripping a purple dumbbell logo">
 </p>
 
-Overload is a mobile-first workout tracking and progress analytics prototype built with React, TypeScript and Vite. It supports reusable templates, custom exercises, workout history, estimated one-rep-max calculations, personal records, CSV backup and local-first data storage.
+Overload is a mobile-first portfolio web prototype built with React, TypeScript and Vite. It supports reusable templates, custom exercises, workout history, estimated one-rep-max calculations, personal records, CSV backup and local-first browser storage.
 
 > Portfolio prototype · Web application · Local-first · Not an App Store release
 
-**Live demo:** [https://devazfar.github.io/Overload/](https://devazfar.github.io/Overload/)
+**Live application:** [https://devazfar.github.io/Overload/](https://devazfar.github.io/Overload/)
+
+[**Try the live demo →**](https://devazfar.github.io/Overload/)
 
 ## Screenshots
 
-Portfolio screenshots are intentionally pending until the final application can be captured in a real rendered browser. The required views and filenames are documented in [`docs/screenshots/README.md`](docs/screenshots/README.md); there are no fabricated or broken screenshot links here.
+All screenshots use Overload&apos;s fictional Beginner Progression profile and contain no private training or account data.
+
+| Home dashboard | Active workout |
+| :---: | :---: |
+| <img src="docs/screenshots/home-dashboard.png" width="360" alt="Overload home dashboard showing synthetic weekly training statistics"> | <img src="docs/screenshots/active-workout.png" width="360" alt="Overload active workout screen with synthetic exercise sets"> |
+| Workout history | Estimated 1RM progress |
+| <img src="docs/screenshots/workout-history.png" width="360" alt="Overload workout history containing fictional completed sessions"> | <img src="docs/screenshots/progress-e1rm.png" width="360" alt="Overload estimated one-rep-max progress cards and time-based chart using synthetic data"> |
+| Demo athletes | Data controls |
+| <img src="docs/screenshots/demo-athletes.png" width="360" alt="Overload Progress screen offering three fictional demo athletes"> | <img src="docs/screenshots/settings-data-controls.png" width="360" alt="Overload Settings controls for CSV backup, restoration and local data deletion"> |
 
 ## Features
 
